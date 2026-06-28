@@ -1,6 +1,9 @@
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { buildDailyReviewPrompt, buildNewsClassificationPrompt, buildNextDayPlanPrompt, buildThemeAnalysisPrompt, createProvider, testProvider } from '@chan-shuo/llm';
 import { loadCsvPayload, loadJsonPayload, MockSource } from '@chan-shuo/sources';
 import { initDb, loadDailyReviewInput, openDb, saveAiAnalysis, saveLimitUps, saveMarketMood, saveNews, saveThemeRanks } from '@chan-shuo/db';
+import { buildMarkdownReport, evaluateAlerts } from '@chan-shuo/core';
 import type { DailyReviewInput, TradeDate } from '@chan-shuo/core';
 
 function dateArg(defaultDate = '2026-06-28'): TradeDate {
@@ -60,6 +63,24 @@ async function runTask(date: TradeDate, task: 'daily_review' | 'next_day_plan' |
   console.log(result.content);
 }
 
+function runAlerts(date: TradeDate) {
+  const db = openDb();
+  const input = loadDailyReviewInput(db, date);
+  db.close();
+  console.log(JSON.stringify(evaluateAlerts({ input }), null, 2));
+}
+
+function exportReport(date: TradeDate, outputPath = `reports/${date}.md`) {
+  const db = openDb();
+  const input = loadDailyReviewInput(db, date);
+  db.close();
+  const alerts = evaluateAlerts({ input });
+  const markdown = buildMarkdownReport({ input, alerts });
+  mkdirSync(dirname(outputPath), { recursive: true });
+  writeFileSync(outputPath, markdown, 'utf8');
+  console.log(`markdown report exported: ${outputPath}`);
+}
+
 const command = process.argv[2] ?? 'mock';
 const date = dateArg();
 if (command === 'mock') await saveMock(date);
@@ -69,5 +90,7 @@ else if (command === 'ai:review') await runTask(date, 'daily_review');
 else if (command === 'ai:plan') await runTask(date, 'next_day_plan');
 else if (command === 'ai:news') await runTask(date, 'news_classification');
 else if (command === 'ai:theme') await runTask(date, 'theme_mapping');
+else if (command === 'alerts') runAlerts(date);
+else if (command === 'report:md') exportReport(date, process.argv[4]);
 else if (command === 'ai:test') console.log((await testProvider()).content);
 else throw new Error(`unknown command: ${command}`);
