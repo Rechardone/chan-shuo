@@ -124,7 +124,38 @@ pnpm ai:news 2026-06-28
 pnpm ai:theme 2026-06-28
 ```
 
-## 8. 接入本地 Ollama
+## 8. 预警与报告导出
+
+查看当日预警信号：
+
+```bash
+pnpm alerts 2026-06-28
+```
+
+导出 Markdown 复盘报告：
+
+```bash
+pnpm report:md 2026-06-28
+```
+
+指定导出路径：
+
+```bash
+pnpm report:md 2026-06-28 reports/2026-06-28-review.md
+```
+
+当前预警规则包括：
+
+```text
+市场温度偏强
+炸板数量偏高
+连板高度打开
+题材涨停扩散
+题材热度居前
+重要消息催化
+```
+
+## 9. 接入本地 Ollama
 
 先确认 Ollama 已启动：
 
@@ -153,30 +184,32 @@ OLLAMA_BASE_URL=http://127.0.0.1:11434
 CHAN_SHUO_DB=data/market-core.db
 ```
 
-## 9. 启动桌面端
+## 10. 启动桌面端
 
 ```bash
 pnpm desktop:dev
 ```
 
-当前桌面端仍使用 mock view model。后续版本会通过 Tauri command 读取 SQLite。
+当前桌面端会优先尝试通过 Tauri command 读取本地 SQLite。普通浏览器开发模式下，如果 Tauri API 不可用，会自动回退到 mock view model。
 
-## 10. 类型检查
+## 11. 类型检查
 
 ```bash
 pnpm typecheck
 ```
 
-## 11. 推荐开发顺序
+## 12. 推荐开发顺序
 
 1. 先跑通 `pnpm install`。
 2. 执行 `pnpm db:init`。
 3. 执行 `pnpm agent:mock 2026-06-28`。
 4. 执行 `pnpm ai:review 2026-06-28`。
-5. 执行 `pnpm desktop:dev`。
-6. 再测试 JSON/CSV 导入。
-7. 最后接 Ollama。
+5. 执行 `pnpm alerts 2026-06-28`。
+6. 执行 `pnpm report:md 2026-06-28`。
+7. 执行 `pnpm desktop:dev`。
+8. 再测试 JSON/CSV 导入。
+9. 最后接 Ollama。
 
-## 12. 合规边界
+## 13. 合规边界
 
 本项目只做个人研究、复盘、合法数据导入和 AI 辅助分析。不要实现破解接口、绕过登录、盗用 token、高频抓取、自动交易下单或商业化分发受限数据。
