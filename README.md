@@ -35,6 +35,28 @@ pnpm desktop:dev
 USE_OLLAMA=1 OLLAMA_MODEL=gemma3:4b pnpm ai:review 2026-06-28
 ```
 
+## 数据导入
+
+JSON 导入：
+
+```bash
+pnpm agent:import:json data/sample-day.json
+```
+
+CSV 导入：
+
+```bash
+pnpm agent:import:csv data/sample-limit-up.csv 2026-06-28
+```
+
+## 操作手册
+
+完整操作说明见：
+
+```text
+docs/operation-manual.md
+```
+
 ## Codex 开发入口
 
 优先阅读：
@@ -46,12 +68,10 @@ docs/codex-master-prompt.md
 然后按顺序执行：
 
 ```text
-docs/codex-tasks/batch-01-project-bootstrap.md
-docs/codex-tasks/batch-02-db-and-mock-data.md
-docs/codex-tasks/batch-03-desktop-tauri-angular.md
-docs/codex-tasks/batch-04-llm-integration.md
-docs/codex-tasks/batch-05-json-csv-import.md
-docs/codex-tasks/batch-06-alerts-and-review.md
+docs/batch-02-plan.md
+docs/batch-03-plan.md
+docs/batch-04-plan.md
+docs/batch-05-summary.md
 ```
 
 ## 合规边界
