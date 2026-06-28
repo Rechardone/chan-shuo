@@ -1,0 +1,40 @@
+{
+  "tradeDate": "2026-06-28",
+  "marketMood": {
+    "tradeDate": "2026-06-28",
+    "limitUpCount": 78,
+    "limitDownCount": 5,
+    "brokenLimitCount": 21,
+    "maxBoardHeight": 5,
+    "sealRate": 78.8,
+    "promotionRate1To2": 18.2,
+    "promotionRate2To3": 11.6,
+    "yesterdayLimitAvgReturn": 2.1,
+    "moodScore": 72,
+    "source": "sample"
+  },
+  "topThemes": [
+    {
+      "tradeDate": "2026-06-28",
+      "themeName": "机器人",
+      "limitUpCount": 14,
+      "boardCount": 4,
+      "leaderCode": "300001",
+      "leaderName": "样例机器人",
+      "rankNo": 1,
+      "heatScore": 92,
+      "source": "sample"
+    },
+    {
+      "tradeDate": "2026-06-28",
+      "themeName": "PCB",
+      "limitUpCount": 9,
+      "boardCount": 2,
+      "leaderCode": "002001",
+      "leaderName": "样例PCB",
+      "rankNo": 2,
+      "heatScore": 83,
+      "source": "sample"
+    }
+  ]
+}
