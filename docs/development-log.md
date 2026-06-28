@@ -11,7 +11,8 @@
 - 完成 Batch 03：Angular 18 桌面端骨架、看板 UI、Tauri v2 占位配置。
 - 完成 Batch 04：OllamaProvider、AI 任务命令、Prompt 构建器、桌面端 view model。
 - 完成 Batch 05：JSON/CSV 导入、桌面端数据服务层、操作手册。
+- 完成 Batch 06：预警规则、Markdown 报告导出、Tauri SQLite dashboard command。
 
 ## 下一步
 
-继续 Batch 06：预警规则、复盘报告导出、Tauri SQLite 读取接口。
+继续 Batch 07：本地运行修复、完整 Tauri 数据查询、PR 合并准备。
