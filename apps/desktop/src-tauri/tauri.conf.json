@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "chan-shuo",
+  "version": "0.1.0",
+  "identifier": "com.chan-shuo.desktop",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build",
+    "devUrl": "http://127.0.0.1:4200",
+    "frontendDist": "../dist/desktop/browser"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Chan Shuo",
+        "width": 1280,
+        "height": 820
+      }
+    ]
+  }
+}
