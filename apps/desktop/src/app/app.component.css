@@ -1,0 +1,176 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  color: #172033;
+  background: #f4f7fb;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.shell {
+  padding: 28px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 28px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #12213b, #274b7a);
+  color: #fff;
+  box-shadow: 0 20px 45px rgba(24, 43, 74, 0.18);
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+h1, h2, h3, p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 34px;
+}
+
+.subtitle {
+  margin-top: 10px;
+  opacity: 0.82;
+}
+
+.primary, button {
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary {
+  background: #ffd36a;
+  color: #182033;
+}
+
+.mood-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+  margin: 22px 0;
+}
+
+.mood-card, .panel {
+  background: #fff;
+  border: 1px solid #e4e9f2;
+  border-radius: 20px;
+  box-shadow: 0 12px 28px rgba(20, 38, 67, 0.08);
+}
+
+.mood-card {
+  padding: 18px;
+}
+
+.mood-card span, .panel-title span, .news-row span, .mood-card small {
+  color: #718099;
+}
+
+.mood-card strong {
+  display: block;
+  margin: 8px 0;
+  font-size: 30px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 18px;
+}
+
+.panel {
+  padding: 20px;
+}
+
+.panel-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 16px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  text-align: left;
+  padding: 12px 10px;
+  border-bottom: 1px solid #edf1f6;
+}
+
+th {
+  color: #718099;
+  font-weight: 600;
+}
+
+.tag {
+  display: inline-block;
+  border-radius: 999px;
+  background: #eef5ff;
+  color: #255a99;
+  padding: 4px 9px;
+  font-size: 12px;
+}
+
+.ladder-row, .news-row {
+  display: flex;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid #edf1f6;
+}
+
+.ladder-row strong {
+  min-width: 52px;
+  color: #d44b3a;
+}
+
+.ladder-row p, .ai-panel p {
+  margin-top: 6px;
+  line-height: 1.7;
+  color: #536176;
+}
+
+.news-row time {
+  min-width: 48px;
+  font-weight: 700;
+}
+
+.news-row p {
+  flex: 1;
+}
+
+.actions {
+  margin-top: 18px;
+  display: flex;
+  gap: 10px;
+}
+
+.actions button {
+  background: #edf3fb;
+  color: #25334c;
+}
+
+@media (max-width: 960px) {
+  .mood-grid, .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
