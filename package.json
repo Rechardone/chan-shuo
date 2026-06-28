@@ -12,6 +12,8 @@
     "ai:plan": "pnpm --filter @chan-shuo/agent plan",
     "ai:news": "pnpm --filter @chan-shuo/agent news",
     "ai:theme": "pnpm --filter @chan-shuo/agent theme",
+    "alerts": "pnpm --filter @chan-shuo/agent alerts",
+    "report:md": "pnpm --filter @chan-shuo/agent report:md",
     "llm:test": "pnpm --filter @chan-shuo/agent llm:test",
     "desktop:dev": "pnpm --filter @chan-shuo/desktop dev",
     "desktop:build": "pnpm --filter @chan-shuo/desktop build",
