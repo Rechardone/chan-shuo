@@ -1,10 +1,19 @@
 import { buildDailyReviewPrompt, buildNewsClassificationPrompt, buildNextDayPlanPrompt, buildThemeAnalysisPrompt, createProvider, testProvider } from '@chan-shuo/llm';
-import { MockSource } from '@chan-shuo/sources';
+import { loadCsvPayload, loadJsonPayload, MockSource } from '@chan-shuo/sources';
 import { initDb, loadDailyReviewInput, openDb, saveAiAnalysis, saveLimitUps, saveMarketMood, saveNews, saveThemeRanks } from '@chan-shuo/db';
 import type { DailyReviewInput, TradeDate } from '@chan-shuo/core';
 
 function dateArg(defaultDate = '2026-06-28'): TradeDate {
   return process.argv[3] ?? defaultDate;
+}
+
+function persistInput(input: DailyReviewInput) {
+  const db = initDb();
+  if (input.marketMood) saveMarketMood(db, input.marketMood);
+  saveThemeRanks(db, input.topThemes);
+  saveLimitUps(db, input.limitUps);
+  saveNews(db, input.news);
+  db.close();
 }
 
 async function collectMock(date: TradeDate): Promise<DailyReviewInput> {
@@ -18,13 +27,20 @@ async function collectMock(date: TradeDate): Promise<DailyReviewInput> {
 
 async function saveMock(date: TradeDate) {
   const input = await collectMock(date);
-  const db = initDb();
-  saveMarketMood(db, input.marketMood!);
-  saveThemeRanks(db, input.topThemes);
-  saveLimitUps(db, input.limitUps);
-  saveNews(db, input.news);
-  db.close();
+  persistInput(input);
   console.log(`mock data saved: ${date}`);
+}
+
+function importJson(filePath: string) {
+  const input = loadJsonPayload(filePath);
+  persistInput(input);
+  console.log(`json data imported: ${filePath} -> ${input.tradeDate}`);
+}
+
+function importCsv(filePath: string, tradeDate: TradeDate) {
+  const input = loadCsvPayload(filePath, tradeDate);
+  persistInput(input);
+  console.log(`csv data imported: ${filePath} -> ${input.tradeDate}`);
 }
 
 async function runTask(date: TradeDate, task: 'daily_review' | 'next_day_plan' | 'news_classification' | 'theme_mapping') {
@@ -47,6 +63,8 @@ async function runTask(date: TradeDate, task: 'daily_review' | 'next_day_plan' |
 const command = process.argv[2] ?? 'mock';
 const date = dateArg();
 if (command === 'mock') await saveMock(date);
+else if (command === 'import:json') importJson(process.argv[3]);
+else if (command === 'import:csv') importCsv(process.argv[3], process.argv[4] ?? '2026-06-28');
 else if (command === 'ai:review') await runTask(date, 'daily_review');
 else if (command === 'ai:plan') await runTask(date, 'next_day_plan');
 else if (command === 'ai:news') await runTask(date, 'news_classification');
