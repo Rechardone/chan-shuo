@@ -3,11 +3,17 @@
   "version": "0.1.0",
   "type": "module",
   "main": "src/index.ts",
+  "scripts": {
+    "db:init": "tsx src/init.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
   "dependencies": {
+    "@chan-shuo/core": "workspace:*",
     "better-sqlite3": "^11.5.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.11",
+    "tsx": "^4.19.2",
     "typescript": "^5.6.3"
   }
 }
