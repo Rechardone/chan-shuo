@@ -105,3 +105,5 @@ export interface MarketSource {
   fetchNewsFlash(date: TradeDate): Promise<NewsItem[]>;
   fetchThemeRank(date: TradeDate): Promise<ThemeRankItem[]>;
 }
+
+export * from './alerts.js';
