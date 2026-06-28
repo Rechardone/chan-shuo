@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MOCK_DASHBOARD } from './market-dashboard.data';
+import { DashboardViewModel, MOCK_DASHBOARD } from './market-dashboard.data';
+import { MarketDashboardService } from './market-dashboard.service';
 
 @Component({
   selector: 'app-root',
@@ -10,11 +11,27 @@ import { MOCK_DASHBOARD } from './market-dashboard.data';
   styleUrl: './app.component.css'
 })
 export class AppComponent {
-  readonly vm = MOCK_DASHBOARD;
-  readonly tradeDate = this.vm.tradeDate;
-  readonly moodCards = this.vm.moodCards;
-  readonly themes = this.vm.themes;
-  readonly limits = this.vm.limits;
-  readonly news = this.vm.news;
-  readonly aiSummary = this.vm.aiSummary;
+  private readonly dashboardService = inject(MarketDashboardService);
+
+  vm: DashboardViewModel = MOCK_DASHBOARD;
+  tradeDate = this.vm.tradeDate;
+  moodCards = this.vm.moodCards;
+  themes = this.vm.themes;
+  limits = this.vm.limits;
+  news = this.vm.news;
+  aiSummary = this.vm.aiSummary;
+
+  constructor() {
+    this.dashboardService.loadDashboard().subscribe((vm) => this.applyViewModel(vm));
+  }
+
+  private applyViewModel(vm: DashboardViewModel) {
+    this.vm = vm;
+    this.tradeDate = vm.tradeDate;
+    this.moodCards = vm.moodCards;
+    this.themes = vm.themes;
+    this.limits = vm.limits;
+    this.news = vm.news;
+    this.aiSummary = vm.aiSummary;
+  }
 }
