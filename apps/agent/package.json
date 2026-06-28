@@ -2,9 +2,15 @@
   "name": "@chan-shuo/agent",
   "version": "0.1.0",
   "type": "module",
-  "main": "src/cli.ts",
+  "main": "src/db-cli.ts",
+  "scripts": {
+    "mock": "tsx src/db-cli.ts mock",
+    "review": "tsx src/db-cli.ts ai:review",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
   "dependencies": {
     "@chan-shuo/core": "workspace:*",
+    "@chan-shuo/db": "workspace:*",
     "@chan-shuo/llm": "workspace:*",
     "@chan-shuo/sources": "workspace:*"
   },
