@@ -6,6 +6,8 @@
   "scripts": {
     "db:init": "tsx packages/db/src/init.ts",
     "agent:mock": "pnpm --filter @chan-shuo/agent mock",
+    "agent:import:json": "pnpm --filter @chan-shuo/agent import:json",
+    "agent:import:csv": "pnpm --filter @chan-shuo/agent import:csv",
     "ai:review": "pnpm --filter @chan-shuo/agent review",
     "ai:plan": "pnpm --filter @chan-shuo/agent plan",
     "ai:news": "pnpm --filter @chan-shuo/agent news",
