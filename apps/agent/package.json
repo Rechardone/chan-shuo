@@ -6,6 +6,10 @@
   "scripts": {
     "mock": "tsx src/db-cli.ts mock",
     "review": "tsx src/db-cli.ts ai:review",
+    "plan": "tsx src/db-cli.ts ai:plan",
+    "news": "tsx src/db-cli.ts ai:news",
+    "theme": "tsx src/db-cli.ts ai:theme",
+    "llm:test": "tsx src/db-cli.ts ai:test",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
