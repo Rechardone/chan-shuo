@@ -155,7 +155,7 @@ pnpm report:md 2026-06-28 reports/2026-06-28-review.md
 重要消息催化
 ```
 
-## 9. 接入本地 Ollama
+## 9. 接入本地 Ollama 多模型
 
 先确认 Ollama 已启动：
 
@@ -163,19 +163,27 @@ pnpm report:md 2026-06-28 reports/2026-06-28-review.md
 ollama serve
 ```
 
-测试模型：
+测试 Gemma：
 
 ```bash
 USE_OLLAMA=1 OLLAMA_MODEL=gemma3:4b pnpm llm:test
+```
+
+测试 DeepSeek 本地模型：
+
+```bash
+USE_OLLAMA=1 OLLAMA_MODEL=deepseek-r1:7b pnpm llm:test
 ```
 
 使用本地模型生成复盘：
 
 ```bash
 USE_OLLAMA=1 OLLAMA_MODEL=gemma3:4b pnpm ai:review 2026-06-28
+USE_OLLAMA=1 OLLAMA_MODEL=deepseek-r1:7b pnpm ai:review 2026-06-28
+USE_OLLAMA=1 OLLAMA_MODEL=qwen2.5:7b pnpm ai:review 2026-06-28
 ```
 
-## 10. 接入 OpenAI-compatible 线上模型
+## 10. 接入 DeepSeek / Qwen 等低成本 API
 
 复制环境变量模板：
 
@@ -183,29 +191,39 @@ USE_OLLAMA=1 OLLAMA_MODEL=gemma3:4b pnpm ai:review 2026-06-28
 cp .env.example .env
 ```
 
-设置这些变量：
+DeepSeek 推荐配置：
 
 ```text
 USE_CLOUD_LLM=1
-LLM_PROVIDER=openai-compatible
-LLM_BASE_URL=https://api.openai.com/v1
-LLM_MODEL=gpt-4o-mini
+LLM_PROVIDER=deepseek
+LLM_BASE_URL=https://api.deepseek.com
+LLM_MODEL=deepseek-chat
 LLM_API_KEY=你的本地密钥
 ```
 
-测试线上模型：
+测试 DeepSeek API：
 
 ```bash
-USE_CLOUD_LLM=1 LLM_API_KEY=你的本地密钥 pnpm llm:test
+USE_CLOUD_LLM=1 LLM_PROVIDER=deepseek LLM_API_KEY=你的本地密钥 pnpm llm:test
 ```
 
-使用线上模型生成复盘：
+使用 DeepSeek API 生成复盘：
 
 ```bash
-USE_CLOUD_LLM=1 LLM_API_KEY=你的本地密钥 pnpm ai:review 2026-06-28
+USE_CLOUD_LLM=1 LLM_PROVIDER=deepseek LLM_API_KEY=你的本地密钥 pnpm ai:review 2026-06-28
 ```
 
-不要把 `.env` 或密钥提交到 Git。
+Qwen-compatible 配置：
+
+```text
+USE_CLOUD_LLM=1
+LLM_PROVIDER=qwen
+LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+LLM_MODEL=qwen-plus
+LLM_API_KEY=你的本地密钥
+```
+
+不建议默认使用昂贵模型。不要把 `.env` 或密钥提交到 Git。
 
 ## 11. 可选环境变量
 
@@ -214,9 +232,9 @@ USE_OLLAMA=1
 OLLAMA_MODEL=gemma3:4b
 OLLAMA_BASE_URL=http://127.0.0.1:11434
 USE_CLOUD_LLM=1
-LLM_PROVIDER=openai-compatible
-LLM_BASE_URL=https://api.openai.com/v1
-LLM_MODEL=gpt-4o-mini
+LLM_PROVIDER=deepseek
+LLM_BASE_URL=https://api.deepseek.com
+LLM_MODEL=deepseek-chat
 LLM_API_KEY=
 CHAN_SHUO_DB=data/market-core.db
 ```
@@ -245,7 +263,7 @@ pnpm typecheck
 6. 执行 `pnpm report:md 2026-06-28`。
 7. 执行 `pnpm desktop:dev`。
 8. 再测试 JSON/CSV 导入。
-9. 最后接 Ollama 或线上模型。
+9. 最后接 Ollama 或 DeepSeek/Qwen API。
 
 ## 15. 合规边界
 
