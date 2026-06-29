@@ -2,18 +2,22 @@
 
 ## 当前实现
 
-现在有两层任务队列：
+当前队列已经切换为 SQLite 持久队列：
 
-1. 桌面端前端内存队列：用于 UI 一键执行 `review -> plan -> report`。
-2. SQLite 持久队列：用于 agent CLI 和后续 Tauri worker。
+```text
+SQLite task_queue
+  -> Tauri queue commands
+  -> Angular TaskQueueService
+  -> 桌面端任务队列面板
+```
 
-## 前端一键工作流
+## 默认工作流
 
 ```text
 review -> plan -> report
 ```
 
-前端队列按顺序执行，每个任务默认最多重试 1 次。
+点击桌面端“入库队列：复盘+计划+报告”后，会把三条任务写入 SQLite。
 
 ## SQLite 持久队列
 
@@ -41,6 +45,20 @@ running
 success
 failed
 cancelled
+```
+
+## Tauri Commands
+
+```text
+enqueue_persistent_tasks
+load_persistent_tasks
+run_next_persistent_task
+```
+
+`run_next_persistent_task` 当前内部调用：
+
+```bash
+pnpm --filter @chan-shuo/agent queue:run-once
 ```
 
 ## CLI 命令
@@ -73,4 +91,4 @@ pnpm queue:run-once
 
 ## 后续增强
 
-下一步可由 Tauri 后台 worker 周期调用队列执行逻辑，或者直接在 Rust 层消费 `task_queue`。
+下一步可以把 `run_next_persistent_task` 升级成 Tauri 后台 worker 定时自动消费队列，而不是用户手动点击“执行下一条”。
