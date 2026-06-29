@@ -13,6 +13,9 @@
     "theme": "tsx src/db-cli.ts ai:theme",
     "alerts": "tsx src/db-cli.ts alerts",
     "report:md": "tsx src/db-cli.ts report:md",
+    "queue:add": "tsx src/db-cli.ts queue:add",
+    "queue:list": "tsx src/db-cli.ts queue:list",
+    "queue:run-once": "tsx src/db-cli.ts queue:run-once",
     "llm:test": "tsx src/db-cli.ts ai:test",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
