@@ -7,9 +7,10 @@ import { DashboardViewModel, MOCK_DASHBOARD } from './market-dashboard.data';
 interface TauriDashboardPayload {
   trade_date: string;
   mood_cards: Array<{ label: string; value: string | number; hint: string }>;
-  theme_count: number;
-  limit_up_count: number;
-  news_count: number;
+  themes: Array<{ rank: number; name: string; limit_up_count: number; leader: string; status: string }>;
+  limits: Array<{ board: string; name: string; theme: string; reason: string }>;
+  news: Array<{ time: string; title: string; tag: string }>;
+  ai_summary: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -23,10 +24,18 @@ export class MarketDashboardService {
 
   private toViewModel(payload: TauriDashboardPayload): DashboardViewModel {
     return {
-      ...MOCK_DASHBOARD,
       tradeDate: payload.trade_date,
       moodCards: payload.mood_cards,
-      aiSummary: `已从本地 SQLite 读取：题材 ${payload.theme_count} 个，涨停 ${payload.limit_up_count} 只，消息 ${payload.news_count} 条。`
+      themes: payload.themes.map((row) => ({
+        rank: row.rank,
+        name: row.name,
+        limitUpCount: row.limit_up_count,
+        leader: row.leader,
+        status: row.status
+      })),
+      limits: payload.limits,
+      news: payload.news,
+      aiSummary: payload.ai_summary
     };
   }
 }
