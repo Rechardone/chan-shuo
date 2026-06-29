@@ -1,57 +1,71 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, concatMap, from, of } from 'rxjs';
-import { AgentTask, AgentTaskService } from './agent-task.service';
-import { DEFAULT_TASK_QUEUE, TaskQueueItemView } from './task-queue.data';
+import { BehaviorSubject, from, Observable, of } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
+import { invoke } from '@tauri-apps/api/core';
+import { AgentTask, AgentTaskResult } from './agent-task.service';
+import { DEFAULT_TASK_QUEUE, QueueItemStatus, TaskQueueItemView } from './task-queue.data';
+
+interface TauriPersistentTaskRow {
+  id: number;
+  trade_date: string;
+  task: AgentTask;
+  status: QueueItemStatus;
+  retry_count: number;
+  max_retries: number;
+  last_error: string;
+  created_at: string;
+  updated_at: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class TaskQueueService {
   private readonly itemsSubject = new BehaviorSubject<TaskQueueItemView[]>(DEFAULT_TASK_QUEUE);
   readonly items$: Observable<TaskQueueItemView[]> = this.itemsSubject.asObservable();
 
-  constructor(private readonly agentTaskService: AgentTaskService) {}
-
-  enqueue(tasks: AgentTask[], tradeDate: string, maxRetries = 1) {
-    const created = tasks.map((task) => ({
-      id: `${Date.now()}-${task}`,
-      task,
-      tradeDate,
-      status: 'queued' as const,
-      retryCount: 0,
-      maxRetries,
-      message: '等待执行'
-    }));
-    this.itemsSubject.next([...created, ...this.itemsSubject.value]);
-    from(created).pipe(concatMap((item) => this.runItem(item))).subscribe();
+  loadQueue(): Observable<TaskQueueItemView[]> {
+    return from(invoke<TauriPersistentTaskRow[]>('load_persistent_tasks')).pipe(
+      map((rows) => rows.map((row) => this.toView(row))),
+      tap((items) => this.itemsSubject.next(items)),
+      catchError(() => of(this.itemsSubject.value))
+    );
   }
 
-  private runItem(item: TaskQueueItemView): Observable<void> {
-    this.patch(item.id, { status: 'running', message: '执行中' });
-    return new Observable<void>((subscriber) => {
-      this.agentTaskService.runTask(item.task, item.tradeDate).subscribe((result) => {
-        if (result.ok) {
-          this.patch(item.id, { status: 'success', message: '执行成功' });
-          subscriber.next();
-          subscriber.complete();
-          return;
-        }
-        const nextRetry = item.retryCount + 1;
-        if (nextRetry <= item.maxRetries) {
-          const retried = { ...item, retryCount: nextRetry };
-          this.patch(item.id, { retryCount: nextRetry, message: `失败，准备第 ${nextRetry} 次重试` });
-          this.runItem(retried).subscribe(() => {
-            subscriber.next();
-            subscriber.complete();
-          });
-          return;
-        }
-        this.patch(item.id, { status: 'failed', message: result.stderr || '执行失败' });
-        subscriber.next();
-        subscriber.complete();
-      });
-    });
+  enqueue(tasks: AgentTask[], tradeDate: string): Observable<TaskQueueItemView[]> {
+    return from(invoke<TauriPersistentTaskRow[]>('enqueue_persistent_tasks', { tradeDate, tasks })).pipe(
+      map((rows) => rows.map((row) => this.toView(row))),
+      tap((items) => this.itemsSubject.next(items)),
+      catchError(() => of(this.itemsSubject.value))
+    );
   }
 
-  private patch(id: string, patch: Partial<TaskQueueItemView>) {
-    this.itemsSubject.next(this.itemsSubject.value.map((item) => item.id === id ? { ...item, ...patch } : item));
+  runNext(): Observable<AgentTaskResult> {
+    return from(invoke<AgentTaskResult>('run_next_persistent_task')).pipe(
+      tap(() => this.loadQueue().subscribe()),
+      catchError((error) => of({ ok: false, command: 'run_next_persistent_task', stdout: '', stderr: String(error) }))
+    );
+  }
+
+  private toView(row: TauriPersistentTaskRow): TaskQueueItemView {
+    return {
+      id: String(row.id),
+      task: row.task,
+      tradeDate: row.trade_date,
+      status: row.status,
+      retryCount: row.retry_count,
+      maxRetries: row.max_retries,
+      message: row.last_error || this.statusMessage(row.status),
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  private statusMessage(status: QueueItemStatus) {
+    return {
+      queued: '等待执行',
+      running: '执行中',
+      success: '执行成功',
+      failed: '执行失败',
+      cancelled: '已取消'
+    }[status];
   }
 }
