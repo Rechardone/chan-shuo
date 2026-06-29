@@ -67,7 +67,7 @@
     <section class="panel ai-panel">
       <div class="panel-title">
         <h2>AI 复盘员</h2>
-        <span>Mock 输出，后续接 SQLite/Ollama</span>
+        <span>{{ selectedPreset.name }}</span>
       </div>
       <p>{{ aiSummary }}</p>
       <div class="actions">
@@ -76,4 +76,34 @@
       </div>
     </section>
   </main>
+
+  <section class="panel model-panel">
+    <div class="panel-title">
+      <h2>模型设置</h2>
+      <span>优先本地 Gemma / DeepSeek / Qwen，低成本 API 作为补强</span>
+    </div>
+
+    <div class="model-grid">
+      <button
+        class="model-card"
+        [class.selected]="preset.id === selectedPreset.id"
+        *ngFor="let preset of settings.presets"
+        (click)="selectPreset(preset)">
+        <div>
+          <strong>{{ preset.name }}</strong>
+          <span>{{ preset.runtime }} · {{ costLabel(preset.costLevel) }}</span>
+        </div>
+        <p>{{ preset.useCase }}</p>
+        <small>{{ preset.provider }} / {{ preset.model }}</small>
+      </button>
+    </div>
+
+    <div class="env-preview">
+      <div>
+        <h3>当前选择：{{ selectedPreset.name }}</h3>
+        <p>{{ selectedPreset.useCase }}</p>
+      </div>
+      <pre>{{ buildEnvPreview() }}</pre>
+    </div>
+  </section>
 </div>
