@@ -24,8 +24,13 @@
     "verify": "pnpm db:init && pnpm agent:mock 2026-06-28 && pnpm ai:review 2026-06-28 && pnpm alerts 2026-06-28 && pnpm report:md 2026-06-28 reports/verify.md",
     "typecheck": "pnpm -r typecheck"
   },
+  "pnpm": {
+    "overrides": {
+      "typescript": "5.5.4"
+    }
+  },
   "devDependencies": {
-    "typescript": "^5.6.3",
+    "typescript": "5.5.4",
     "tsx": "^4.19.2"
   }
 }
