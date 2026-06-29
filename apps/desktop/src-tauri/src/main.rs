@@ -3,37 +3,19 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Serialize)]
-struct MoodCard {
-    label: String,
-    value: serde_json::Value,
-    hint: String,
-}
+struct MoodCard { label: String, value: serde_json::Value, hint: String }
 
 #[derive(Serialize)]
-struct ThemeRow {
-    rank: i64,
-    name: String,
-    limit_up_count: i64,
-    leader: String,
-    status: String,
-}
+struct ThemeRow { rank: i64, name: String, limit_up_count: i64, leader: String, status: String }
 
 #[derive(Serialize)]
-struct LimitRow {
-    board: String,
-    name: String,
-    theme: String,
-    reason: String,
-}
+struct LimitRow { board: String, name: String, theme: String, reason: String }
 
 #[derive(Serialize)]
-struct NewsRow {
-    time: String,
-    title: String,
-    tag: String,
-}
+struct NewsRow { time: String, title: String, tag: String }
 
 #[derive(Serialize)]
 struct DashboardPayload {
@@ -59,11 +41,18 @@ struct AiAnalysisRow {
 }
 
 #[derive(Serialize)]
-struct AgentTaskResult {
-    ok: bool,
+struct AgentTaskResult { ok: bool, command: String, stdout: String, stderr: String }
+
+#[derive(Serialize, Deserialize, Clone)]
+struct TaskLogEntry {
+    id: String,
+    task: String,
+    trade_date: String,
     command: String,
+    ok: bool,
     stdout: String,
     stderr: String,
+    created_at: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -88,34 +77,28 @@ impl Default for ModelConfig {
 }
 
 fn open_db(db_path: Option<String>) -> Result<Connection, String> {
-    let path = db_path
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from("data/market-core.db"));
+    let path = db_path.map(PathBuf::from).unwrap_or_else(|| PathBuf::from("data/market-core.db"));
     Connection::open(path).map_err(|err| err.to_string())
 }
 
-fn config_path() -> PathBuf {
-    std::env::current_dir()
-        .unwrap_or_else(|_| PathBuf::from("."))
-        .join("data")
-        .join("model-config.json")
+fn data_path(file_name: &str) -> PathBuf {
+    std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")).join("data").join(file_name)
+}
+
+fn config_path() -> PathBuf { data_path("model-config.json") }
+fn task_log_path() -> PathBuf { data_path("task-log.json") }
+fn now_id() -> String {
+    SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs().to_string()
 }
 
 #[tauri::command]
 fn load_dashboard_from_sqlite(db_path: Option<String>, trade_date: String) -> Result<DashboardPayload, String> {
     let conn = open_db(db_path)?;
-
     let mood = conn
         .prepare("SELECT limit_up_count, limit_down_count, broken_limit_count, max_board_height, mood_score FROM market_mood WHERE trade_date = ?")
         .map_err(|err| err.to_string())?
         .query_row([trade_date.as_str()], |row| {
-            Ok((
-                row.get::<_, i64>(0)?,
-                row.get::<_, i64>(1)?,
-                row.get::<_, i64>(2)?,
-                row.get::<_, i64>(3)?,
-                row.get::<_, Option<f64>>(4)?,
-            ))
+            Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?, row.get::<_, i64>(2)?, row.get::<_, i64>(3)?, row.get::<_, Option<f64>>(4)?))
         })
         .optional()
         .map_err(|err| err.to_string())?
@@ -153,19 +136,11 @@ fn load_ai_analyses(db_path: Option<String>, trade_date: String) -> Result<Vec<A
     let rows = stmt
         .query_map([trade_date.as_str()], |row| {
             Ok(AiAnalysisRow {
-                id: row.get(0)?,
-                trade_date: row.get(1)?,
-                target_type: row.get(2)?,
-                target_id: row.get(3)?,
-                task_type: row.get(4)?,
-                provider: row.get(5)?,
-                model: row.get(6)?,
-                result: row.get(7)?,
-                created_at: row.get(8)?,
+                id: row.get(0)?, trade_date: row.get(1)?, target_type: row.get(2)?, target_id: row.get(3)?, task_type: row.get(4)?,
+                provider: row.get(5)?, model: row.get(6)?, result: row.get(7)?, created_at: row.get(8)?,
             })
         })
         .map_err(|err| err.to_string())?;
-
     rows.collect::<Result<Vec<_>, _>>().map_err(|err| err.to_string())
 }
 
@@ -180,26 +155,41 @@ fn run_agent_task(task: String, trade_date: String) -> Result<AgentTaskResult, S
         "report" => "report:md",
         _ => return Err(format!("unsupported agent task: {}", task)),
     };
-
-    let output = Command::new("pnpm")
-        .args(["--filter", "@chan-shuo/agent", script, trade_date.as_str()])
-        .output()
-        .map_err(|err| err.to_string())?;
-
-    Ok(AgentTaskResult {
+    let command = format!("pnpm --filter @chan-shuo/agent {} {}", script, trade_date);
+    let output = Command::new("pnpm").args(["--filter", "@chan-shuo/agent", script, trade_date.as_str()]).output().map_err(|err| err.to_string())?;
+    let result = AgentTaskResult {
         ok: output.status.success(),
-        command: format!("pnpm --filter @chan-shuo/agent {} {}", script, trade_date),
+        command: command.clone(),
         stdout: String::from_utf8_lossy(&output.stdout).to_string(),
         stderr: String::from_utf8_lossy(&output.stderr).to_string(),
-    })
+    };
+    append_task_log(TaskLogEntry {
+        id: now_id(),
+        task,
+        trade_date,
+        command,
+        ok: result.ok,
+        stdout: result.stdout.clone(),
+        stderr: result.stderr.clone(),
+        created_at: now_id(),
+    })?;
+    Ok(result)
+}
+
+#[tauri::command]
+fn load_task_logs() -> Result<Vec<TaskLogEntry>, String> {
+    let path = task_log_path();
+    if !path.exists() { return Ok(vec![]); }
+    let raw = fs::read_to_string(path).map_err(|err| err.to_string())?;
+    let mut logs = serde_json::from_str::<Vec<TaskLogEntry>>(&raw).map_err(|err| err.to_string())?;
+    logs.reverse();
+    Ok(logs.into_iter().take(50).collect())
 }
 
 #[tauri::command]
 fn load_model_config() -> Result<ModelConfig, String> {
     let path = config_path();
-    if !path.exists() {
-        return Ok(ModelConfig::default());
-    }
+    if !path.exists() { return Ok(ModelConfig::default()); }
     let raw = fs::read_to_string(path).map_err(|err| err.to_string())?;
     serde_json::from_str(&raw).map_err(|err| err.to_string())
 }
@@ -207,33 +197,35 @@ fn load_model_config() -> Result<ModelConfig, String> {
 #[tauri::command]
 fn save_model_config(config: ModelConfig) -> Result<ModelConfig, String> {
     let path = config_path();
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).map_err(|err| err.to_string())?;
-    }
+    if let Some(parent) = path.parent() { fs::create_dir_all(parent).map_err(|err| err.to_string())?; }
     let safe_config = ModelConfig { api_key_saved_locally: false, ..config };
     let raw = serde_json::to_string_pretty(&safe_config).map_err(|err| err.to_string())?;
     fs::write(path, raw).map_err(|err| err.to_string())?;
     Ok(safe_config)
 }
 
+fn append_task_log(entry: TaskLogEntry) -> Result<(), String> {
+    let path = task_log_path();
+    if let Some(parent) = path.parent() { fs::create_dir_all(parent).map_err(|err| err.to_string())?; }
+    let mut logs = if path.exists() {
+        let raw = fs::read_to_string(&path).map_err(|err| err.to_string())?;
+        serde_json::from_str::<Vec<TaskLogEntry>>(&raw).unwrap_or_default()
+    } else { vec![] };
+    logs.push(entry);
+    if logs.len() > 200 { logs = logs.split_off(logs.len() - 200); }
+    let raw = serde_json::to_string_pretty(&logs).map_err(|err| err.to_string())?;
+    fs::write(path, raw).map_err(|err| err.to_string())
+}
+
 fn load_themes(conn: &Connection, trade_date: &str) -> Result<Vec<ThemeRow>, String> {
     let mut stmt = conn
         .prepare("SELECT COALESCE(rank_no, 99), theme_name, limit_up_count, COALESCE(leader_name, '待确认'), COALESCE(heat_score, 0) FROM theme_daily_rank WHERE trade_date = ? ORDER BY rank_no ASC, heat_score DESC LIMIT 12")
         .map_err(|err| err.to_string())?;
-    let rows = stmt
-        .query_map([trade_date], |row| {
-            let rank = row.get::<_, i64>(0)?;
-            let heat = row.get::<_, f64>(4)?;
-            Ok(ThemeRow {
-                rank,
-                name: row.get(1)?,
-                limit_up_count: row.get(2)?,
-                leader: row.get(3)?,
-                status: if rank <= 3 && heat >= 85.0 { "主线候选".into() } else { "观察".into() },
-            })
-        })
-        .map_err(|err| err.to_string())?;
-
+    let rows = stmt.query_map([trade_date], |row| {
+        let rank = row.get::<_, i64>(0)?;
+        let heat = row.get::<_, f64>(4)?;
+        Ok(ThemeRow { rank, name: row.get(1)?, limit_up_count: row.get(2)?, leader: row.get(3)?, status: if rank <= 3 && heat >= 85.0 { "主线候选".into() } else { "观察".into() } })
+    }).map_err(|err| err.to_string())?;
     rows.collect::<Result<Vec<_>, _>>().map_err(|err| err.to_string())
 }
 
@@ -241,19 +233,11 @@ fn load_limits(conn: &Connection, trade_date: &str) -> Result<Vec<LimitRow>, Str
     let mut stmt = conn
         .prepare("SELECT board_count, name, COALESCE(themes, '[]'), COALESCE(reason, '') FROM limit_up_daily WHERE trade_date = ? ORDER BY board_count DESC, first_limit_time ASC LIMIT 20")
         .map_err(|err| err.to_string())?;
-    let rows = stmt
-        .query_map([trade_date], |row| {
-            let board = row.get::<_, i64>(0)?;
-            let themes_json = row.get::<_, String>(2)?;
-            Ok(LimitRow {
-                board: format!("{}板", board),
-                name: row.get(1)?,
-                theme: parse_first_theme(&themes_json),
-                reason: row.get(3)?,
-            })
-        })
-        .map_err(|err| err.to_string())?;
-
+    let rows = stmt.query_map([trade_date], |row| {
+        let board = row.get::<_, i64>(0)?;
+        let themes_json = row.get::<_, String>(2)?;
+        Ok(LimitRow { board: format!("{}板", board), name: row.get(1)?, theme: parse_first_theme(&themes_json), reason: row.get(3)? })
+    }).map_err(|err| err.to_string())?;
     rows.collect::<Result<Vec<_>, _>>().map_err(|err| err.to_string())
 }
 
@@ -262,16 +246,9 @@ fn load_news(conn: &Connection, trade_date: &str) -> Result<Vec<NewsRow>, String
     let mut stmt = conn
         .prepare("SELECT news_time, title, COALESCE(event_type, '未分类') FROM news_flash WHERE news_time LIKE ? ORDER BY news_time ASC LIMIT 20")
         .map_err(|err| err.to_string())?;
-    let rows = stmt
-        .query_map([like.as_str()], |row| {
-            Ok(NewsRow {
-                time: compact_time(row.get::<_, String>(0)?),
-                title: row.get(1)?,
-                tag: row.get(2)?,
-            })
-        })
-        .map_err(|err| err.to_string())?;
-
+    let rows = stmt.query_map([like.as_str()], |row| {
+        Ok(NewsRow { time: compact_time(row.get::<_, String>(0)?), title: row.get(1)?, tag: row.get(2)? })
+    }).map_err(|err| err.to_string())?;
     rows.collect::<Result<Vec<_>, _>>().map_err(|err| err.to_string())
 }
 
@@ -280,9 +257,7 @@ fn load_latest_ai_summary(conn: &Connection, trade_date: &str) -> Result<Option<
         "SELECT result FROM ai_analysis WHERE trade_date = ? AND task_type = 'daily_review' ORDER BY id DESC LIMIT 1",
         [trade_date],
         |row| row.get(0),
-    )
-    .optional()
-    .map_err(|err| err.to_string())
+    ).optional().map_err(|err| err.to_string())
 }
 
 fn parse_first_theme(raw: &str) -> String {
@@ -300,6 +275,7 @@ fn main() {
             load_dashboard_from_sqlite,
             load_ai_analyses,
             run_agent_task,
+            load_task_logs,
             load_model_config,
             save_model_config
         ])
