@@ -1,5 +1,6 @@
 use rusqlite::{Connection, OptionalExtension};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use std::fs;
 use std::path::PathBuf;
 
 #[derive(Serialize)]
@@ -43,11 +44,52 @@ struct DashboardPayload {
     ai_summary: String,
 }
 
+#[derive(Serialize)]
+struct AiAnalysisRow {
+    id: i64,
+    trade_date: String,
+    target_type: String,
+    target_id: String,
+    task_type: String,
+    provider: String,
+    model: String,
+    result: String,
+    created_at: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct ModelConfig {
+    runtime: String,
+    provider: String,
+    model: String,
+    base_url: String,
+    api_key_saved_locally: bool,
+}
+
+impl Default for ModelConfig {
+    fn default() -> Self {
+        Self {
+            runtime: "ollama".into(),
+            provider: "ollama".into(),
+            model: "gemma3:4b".into(),
+            base_url: "http://127.0.0.1:11434".into(),
+            api_key_saved_locally: false,
+        }
+    }
+}
+
 fn open_db(db_path: Option<String>) -> Result<Connection, String> {
     let path = db_path
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("data/market-core.db"));
     Connection::open(path).map_err(|err| err.to_string())
+}
+
+fn config_path() -> PathBuf {
+    std::env::current_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join("data")
+        .join("model-config.json")
 }
 
 #[tauri::command]
@@ -91,6 +133,53 @@ fn load_dashboard_from_sqlite(db_path: Option<String>, trade_date: String) -> Re
         news,
         ai_summary,
     })
+}
+
+#[tauri::command]
+fn load_ai_analyses(db_path: Option<String>, trade_date: String) -> Result<Vec<AiAnalysisRow>, String> {
+    let conn = open_db(db_path)?;
+    let mut stmt = conn
+        .prepare("SELECT id, COALESCE(trade_date, ''), target_type, COALESCE(target_id, ''), task_type, provider, model, result, created_at FROM ai_analysis WHERE trade_date = ? ORDER BY id DESC LIMIT 20")
+        .map_err(|err| err.to_string())?;
+    let rows = stmt
+        .query_map([trade_date.as_str()], |row| {
+            Ok(AiAnalysisRow {
+                id: row.get(0)?,
+                trade_date: row.get(1)?,
+                target_type: row.get(2)?,
+                target_id: row.get(3)?,
+                task_type: row.get(4)?,
+                provider: row.get(5)?,
+                model: row.get(6)?,
+                result: row.get(7)?,
+                created_at: row.get(8)?,
+            })
+        })
+        .map_err(|err| err.to_string())?;
+
+    rows.collect::<Result<Vec<_>, _>>().map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+fn load_model_config() -> Result<ModelConfig, String> {
+    let path = config_path();
+    if !path.exists() {
+        return Ok(ModelConfig::default());
+    }
+    let raw = fs::read_to_string(path).map_err(|err| err.to_string())?;
+    serde_json::from_str(&raw).map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+fn save_model_config(config: ModelConfig) -> Result<ModelConfig, String> {
+    let path = config_path();
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|err| err.to_string())?;
+    }
+    let safe_config = ModelConfig { api_key_saved_locally: false, ..config };
+    let raw = serde_json::to_string_pretty(&safe_config).map_err(|err| err.to_string())?;
+    fs::write(path, raw).map_err(|err| err.to_string())?;
+    Ok(safe_config)
 }
 
 fn load_themes(conn: &Connection, trade_date: &str) -> Result<Vec<ThemeRow>, String> {
@@ -173,7 +262,12 @@ fn compact_time(value: String) -> String {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![load_dashboard_from_sqlite])
+        .invoke_handler(tauri::generate_handler![
+            load_dashboard_from_sqlite,
+            load_ai_analyses,
+            load_model_config,
+            save_model_config
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
