@@ -43,6 +43,19 @@ struct AiAnalysisRow {
 #[derive(Serialize)]
 struct AgentTaskResult { ok: bool, command: String, stdout: String, stderr: String }
 
+#[derive(Serialize)]
+struct PersistentTaskRow {
+    id: i64,
+    trade_date: String,
+    task: String,
+    status: String,
+    retry_count: i64,
+    max_retries: i64,
+    last_error: String,
+    created_at: String,
+    updated_at: String,
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 struct TaskLogEntry {
     id: String,
@@ -177,6 +190,40 @@ fn run_agent_task(task: String, trade_date: String) -> Result<AgentTaskResult, S
 }
 
 #[tauri::command]
+fn enqueue_persistent_tasks(db_path: Option<String>, trade_date: String, tasks: Vec<String>) -> Result<Vec<PersistentTaskRow>, String> {
+    let conn = open_db(db_path)?;
+    for task in tasks {
+        validate_queue_task(&task)?;
+        conn.prepare("INSERT INTO task_queue (trade_date, task, status, retry_count, max_retries) VALUES (?, ?, 'queued', 0, 1)")
+            .map_err(|err| err.to_string())?
+            .run(trade_date.as_str(), task.as_str())
+            .map_err(|err| err.to_string())?;
+    }
+    load_persistent_tasks_from_conn(&conn, 50)
+}
+
+#[tauri::command]
+fn load_persistent_tasks(db_path: Option<String>) -> Result<Vec<PersistentTaskRow>, String> {
+    let conn = open_db(db_path)?;
+    load_persistent_tasks_from_conn(&conn, 50)
+}
+
+#[tauri::command]
+fn run_next_persistent_task() -> Result<AgentTaskResult, String> {
+    let command = "pnpm --filter @chan-shuo/agent queue:run-once".to_string();
+    let output = Command::new("pnpm")
+        .args(["--filter", "@chan-shuo/agent", "queue:run-once"])
+        .output()
+        .map_err(|err| err.to_string())?;
+    Ok(AgentTaskResult {
+        ok: output.status.success(),
+        command,
+        stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+        stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+    })
+}
+
+#[tauri::command]
 fn load_task_logs() -> Result<Vec<TaskLogEntry>, String> {
     let path = task_log_path();
     if !path.exists() { return Ok(vec![]); }
@@ -215,6 +262,33 @@ fn append_task_log(entry: TaskLogEntry) -> Result<(), String> {
     if logs.len() > 200 { logs = logs.split_off(logs.len() - 200); }
     let raw = serde_json::to_string_pretty(&logs).map_err(|err| err.to_string())?;
     fs::write(path, raw).map_err(|err| err.to_string())
+}
+
+fn validate_queue_task(task: &str) -> Result<(), String> {
+    match task {
+        "review" | "plan" | "news" | "theme" | "alerts" | "report" => Ok(()),
+        _ => Err(format!("unsupported queue task: {}", task)),
+    }
+}
+
+fn load_persistent_tasks_from_conn(conn: &Connection, limit: i64) -> Result<Vec<PersistentTaskRow>, String> {
+    let mut stmt = conn
+        .prepare("SELECT id, trade_date, task, status, retry_count, max_retries, COALESCE(last_error, ''), COALESCE(created_at, ''), COALESCE(updated_at, '') FROM task_queue ORDER BY id DESC LIMIT ?")
+        .map_err(|err| err.to_string())?;
+    let rows = stmt.query_map([limit], |row| {
+        Ok(PersistentTaskRow {
+            id: row.get(0)?,
+            trade_date: row.get(1)?,
+            task: row.get(2)?,
+            status: row.get(3)?,
+            retry_count: row.get(4)?,
+            max_retries: row.get(5)?,
+            last_error: row.get(6)?,
+            created_at: row.get(7)?,
+            updated_at: row.get(8)?,
+        })
+    }).map_err(|err| err.to_string())?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(|err| err.to_string())
 }
 
 fn load_themes(conn: &Connection, trade_date: &str) -> Result<Vec<ThemeRow>, String> {
@@ -275,6 +349,9 @@ fn main() {
             load_dashboard_from_sqlite,
             load_ai_analyses,
             run_agent_task,
+            enqueue_persistent_tasks,
+            load_persistent_tasks,
+            run_next_persistent_task,
             load_task_logs,
             load_model_config,
             save_model_config
