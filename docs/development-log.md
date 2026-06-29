@@ -22,7 +22,8 @@
 - 完成 Batch 14：任务日志持久化、任务日志面板、运行时文件忽略、Keychain 安全方案。
 - 完成 Batch 15：前端任务队列、串行执行、失败重试、队列面板。
 - 完成 Batch 16：SQLite 持久任务队列 schema、repository、agent CLI 队列命令。
+- 完成 Batch 17：桌面端队列 UI 切换到 SQLite 持久队列，Tauri 暴露入队/读取/执行下一条命令。
 
 ## 下一步
 
-继续 Batch 17：Tauri 后台 worker 消费 SQLite 队列，或将队列 UI 切换到 SQLite 持久队列。
+继续 Batch 18：Tauri 后台 worker 自动消费 SQLite 队列，或者先做取消/重试/清理队列操作。
