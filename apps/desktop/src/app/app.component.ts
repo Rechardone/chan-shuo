@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { DashboardViewModel, MOCK_DASHBOARD } from './market-dashboard.data';
 import { MarketDashboardService } from './market-dashboard.service';
 import { MODEL_SETTINGS, ModelPresetView, ModelSettingsViewModel } from './model-settings.data';
+import { AiAnalysisService } from './ai-analysis.service';
+import { AiAnalysisView } from './ai-analysis.data';
+import { ModelConfigService } from './model-config.service';
 
 @Component({
   selector: 'app-root',
@@ -13,6 +16,8 @@ import { MODEL_SETTINGS, ModelPresetView, ModelSettingsViewModel } from './model
 })
 export class AppComponent {
   private readonly dashboardService = inject(MarketDashboardService);
+  private readonly aiAnalysisService = inject(AiAnalysisService);
+  private readonly modelConfigService = inject(ModelConfigService);
 
   vm: DashboardViewModel = MOCK_DASHBOARD;
   tradeDate = this.vm.tradeDate;
@@ -21,17 +26,39 @@ export class AppComponent {
   limits = this.vm.limits;
   news = this.vm.news;
   aiSummary = this.vm.aiSummary;
+  analyses: AiAnalysisView[] = [];
+  configMessage = '模型配置尚未保存';
 
   settings: ModelSettingsViewModel = MODEL_SETTINGS;
   selectedPreset = this.settings.presets.find((preset) => preset.id === this.settings.selectedPresetId) ?? this.settings.presets[0];
 
   constructor() {
     this.dashboardService.loadDashboard().subscribe((vm) => this.applyViewModel(vm));
+    this.aiAnalysisService.loadAnalyses(this.tradeDate).subscribe((items) => this.analyses = items);
+    this.modelConfigService.loadConfig().subscribe((config) => {
+      this.configMessage = `已读取本地配置：${config.provider} / ${config.model}`;
+    });
   }
 
   selectPreset(preset: ModelPresetView) {
     this.settings = { ...this.settings, selectedPresetId: preset.id };
     this.selectedPreset = preset;
+  }
+
+  saveSelectedPreset() {
+    this.modelConfigService.saveConfig({
+      runtime: this.selectedPreset.runtime,
+      provider: this.selectedPreset.provider,
+      model: this.selectedPreset.model,
+      base_url: this.selectedPreset.baseUrl ?? '',
+      api_key_saved_locally: false
+    }).subscribe((config) => {
+      this.configMessage = `已保存：${config.provider} / ${config.model}`;
+    });
+  }
+
+  refreshAnalyses() {
+    this.aiAnalysisService.loadAnalyses(this.tradeDate).subscribe((items) => this.analyses = items);
   }
 
   buildEnvPreview(preset = this.selectedPreset) {
