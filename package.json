@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@9.12.3",
   "scripts": {
     "db:init": "tsx packages/db/src/init.ts",
     "agent:mock": "pnpm --filter @chan-shuo/agent mock",
@@ -17,6 +18,7 @@
     "llm:test": "pnpm --filter @chan-shuo/agent llm:test",
     "desktop:dev": "pnpm --filter @chan-shuo/desktop dev",
     "desktop:build": "pnpm --filter @chan-shuo/desktop build",
+    "verify": "pnpm db:init && pnpm agent:mock 2026-06-28 && pnpm ai:review 2026-06-28 && pnpm alerts 2026-06-28 && pnpm report:md 2026-06-28 reports/verify.md",
     "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {
