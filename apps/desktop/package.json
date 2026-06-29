@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "ng serve --host 127.0.0.1 --port 4200",
     "build": "ng build",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json"
+    "typecheck": "ng build --configuration development"
   },
   "dependencies": {
     "@angular/animations": "^18.2.13",
