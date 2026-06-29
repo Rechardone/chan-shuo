@@ -2,6 +2,7 @@ use rusqlite::{Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+use std::process::Command;
 
 #[derive(Serialize)]
 struct MoodCard {
@@ -55,6 +56,14 @@ struct AiAnalysisRow {
     model: String,
     result: String,
     created_at: String,
+}
+
+#[derive(Serialize)]
+struct AgentTaskResult {
+    ok: bool,
+    command: String,
+    stdout: String,
+    stderr: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -158,6 +167,31 @@ fn load_ai_analyses(db_path: Option<String>, trade_date: String) -> Result<Vec<A
         .map_err(|err| err.to_string())?;
 
     rows.collect::<Result<Vec<_>, _>>().map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+fn run_agent_task(task: String, trade_date: String) -> Result<AgentTaskResult, String> {
+    let script = match task.as_str() {
+        "review" => "review",
+        "plan" => "plan",
+        "news" => "news",
+        "theme" => "theme",
+        "alerts" => "alerts",
+        "report" => "report:md",
+        _ => return Err(format!("unsupported agent task: {}", task)),
+    };
+
+    let output = Command::new("pnpm")
+        .args(["--filter", "@chan-shuo/agent", script, trade_date.as_str()])
+        .output()
+        .map_err(|err| err.to_string())?;
+
+    Ok(AgentTaskResult {
+        ok: output.status.success(),
+        command: format!("pnpm --filter @chan-shuo/agent {} {}", script, trade_date),
+        stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+        stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+    })
 }
 
 #[tauri::command]
@@ -265,6 +299,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             load_dashboard_from_sqlite,
             load_ai_analyses,
+            run_agent_task,
             load_model_config,
             save_model_config
         ])
