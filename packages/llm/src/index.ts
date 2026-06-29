@@ -18,6 +18,35 @@ export interface LLMProvider {
   chat(input: LLMChatInput): Promise<LLMChatResult>;
 }
 
+export interface ProviderPreset {
+  provider: string;
+  baseUrl: string;
+  model: string;
+}
+
+export const CLOUD_PROVIDER_PRESETS: Record<string, ProviderPreset> = {
+  deepseek: {
+    provider: 'deepseek',
+    baseUrl: 'https://api.deepseek.com',
+    model: 'deepseek-chat'
+  },
+  qwen: {
+    provider: 'qwen',
+    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    model: 'qwen-plus'
+  },
+  openai: {
+    provider: 'openai',
+    baseUrl: 'https://api.openai.com/v1',
+    model: 'gpt-4o-mini'
+  },
+  compatible: {
+    provider: 'openai-compatible',
+    baseUrl: 'https://api.openai.com/v1',
+    model: 'gpt-4o-mini'
+  }
+};
+
 export class MockLLMProvider implements LLMProvider {
   provider = 'mock';
   model = 'mock-reviewer';
@@ -72,13 +101,16 @@ export class OllamaProvider implements LLMProvider {
 }
 
 export class OpenAICompatibleProvider implements LLMProvider {
-  provider = process.env.LLM_PROVIDER || 'openai-compatible';
+  provider: string;
 
   constructor(
-    public model = process.env.LLM_MODEL || 'gpt-4o-mini',
+    public model = resolveCloudPreset().model,
     private apiKey = process.env.LLM_API_KEY || '',
-    private baseUrl = process.env.LLM_BASE_URL || 'https://api.openai.com/v1'
-  ) {}
+    private baseUrl = resolveCloudPreset().baseUrl,
+    provider = resolveCloudPreset().provider
+  ) {
+    this.provider = provider;
+  }
 
   async chat(input: LLMChatInput): Promise<LLMChatResult> {
     if (!this.apiKey) throw new Error('LLM_API_KEY is required for cloud provider');
@@ -105,6 +137,16 @@ export class OpenAICompatibleProvider implements LLMProvider {
     const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
     return { provider: this.provider, model: this.model, content: data.choices?.[0]?.message?.content ?? '' };
   }
+}
+
+export function resolveCloudPreset(): ProviderPreset {
+  const key = (process.env.LLM_PROVIDER || 'deepseek').toLowerCase();
+  const preset = CLOUD_PROVIDER_PRESETS[key] ?? CLOUD_PROVIDER_PRESETS.compatible;
+  return {
+    provider: process.env.LLM_PROVIDER || preset.provider,
+    baseUrl: process.env.LLM_BASE_URL || preset.baseUrl,
+    model: process.env.LLM_MODEL || preset.model
+  };
 }
 
 export function createProvider() {
