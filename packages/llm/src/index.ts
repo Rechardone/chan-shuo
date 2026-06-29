@@ -71,8 +71,46 @@ export class OllamaProvider implements LLMProvider {
   }
 }
 
+export class OpenAICompatibleProvider implements LLMProvider {
+  provider = process.env.LLM_PROVIDER || 'openai-compatible';
+
+  constructor(
+    public model = process.env.LLM_MODEL || 'gpt-4o-mini',
+    private apiKey = process.env.LLM_API_KEY || '',
+    private baseUrl = process.env.LLM_BASE_URL || 'https://api.openai.com/v1'
+  ) {}
+
+  async chat(input: LLMChatInput): Promise<LLMChatResult> {
+    if (!this.apiKey) throw new Error('LLM_API_KEY is required for cloud provider');
+    const response = await fetch(`${this.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${this.apiKey}`
+      },
+      body: JSON.stringify({
+        model: this.model,
+        messages: [
+          ...(input.system ? [{ role: 'system', content: input.system }] : []),
+          { role: 'user', content: input.prompt }
+        ],
+        temperature: input.temperature ?? 0.2
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`${this.provider} request failed: ${response.status} ${await response.text()}`);
+    }
+
+    const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+    return { provider: this.provider, model: this.model, content: data.choices?.[0]?.message?.content ?? '' };
+  }
+}
+
 export function createProvider() {
-  return process.env.USE_OLLAMA === '1' ? new OllamaProvider() : new MockLLMProvider();
+  if (process.env.USE_OLLAMA === '1') return new OllamaProvider();
+  if (process.env.USE_CLOUD_LLM === '1') return new OpenAICompatibleProvider();
+  return new MockLLMProvider();
 }
 
 export async function testProvider(provider = createProvider()) {
