@@ -9,6 +9,8 @@ import { ModelConfigService } from './model-config.service';
 import { AgentTask, AgentTaskResult, AgentTaskService } from './agent-task.service';
 import { TaskLogService } from './task-log.service';
 import { TaskLogView } from './task-log.data';
+import { TaskQueueService } from './task-queue.service';
+import { TaskQueueItemView } from './task-queue.data';
 
 @Component({
   selector: 'app-root',
@@ -23,6 +25,7 @@ export class AppComponent {
   private readonly modelConfigService = inject(ModelConfigService);
   private readonly agentTaskService = inject(AgentTaskService);
   private readonly taskLogService = inject(TaskLogService);
+  private readonly taskQueueService = inject(TaskQueueService);
 
   vm: DashboardViewModel = MOCK_DASHBOARD;
   tradeDate = this.vm.tradeDate;
@@ -33,6 +36,7 @@ export class AppComponent {
   aiSummary = this.vm.aiSummary;
   analyses: AiAnalysisView[] = [];
   taskLogs: TaskLogView[] = [];
+  queueItems: TaskQueueItemView[] = [];
   configMessage = '模型配置尚未保存';
   taskRunning = false;
   taskMessage = 'AI 任务待执行';
@@ -45,6 +49,7 @@ export class AppComponent {
     this.refreshDashboard();
     this.refreshAnalyses();
     this.refreshTaskLogs();
+    this.taskQueueService.items$.subscribe((items) => this.queueItems = items);
     this.modelConfigService.loadConfig().subscribe((config) => {
       this.configMessage = `已读取本地配置：${config.provider} / ${config.model}`;
     });
@@ -78,6 +83,10 @@ export class AppComponent {
       this.refreshAnalyses();
       this.refreshTaskLogs();
     });
+  }
+
+  enqueueDailyWorkflow() {
+    this.taskQueueService.enqueue(['review', 'plan', 'report'], this.tradeDate, 1);
   }
 
   refreshDashboard() {
