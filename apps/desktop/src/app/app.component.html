@@ -119,6 +119,21 @@
     </div>
   </section>
 
+  <section class="panel task-log-panel">
+    <div class="panel-title">
+      <h2>任务日志</h2>
+      <span>读取 data/task-log.json 最近 50 条</span>
+    </div>
+    <div class="analysis-empty" *ngIf="taskLogs.length === 0">暂无任务日志。</div>
+    <article class="log-card" *ngFor="let item of taskLogs">
+      <header>
+        <strong>{{ item.ok ? '成功' : '失败' }} · {{ item.task }}</strong>
+        <span>{{ item.tradeDate }} · {{ item.createdAt }}</span>
+      </header>
+      <code>{{ item.command }}</code>
+    </article>
+  </section>
+
   <section class="panel analysis-panel">
     <div class="panel-title">
       <h2>AI 分析结果回看</h2>
