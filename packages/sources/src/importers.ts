@@ -27,7 +27,7 @@ export function loadCsvPayload(filePath: string, tradeDate: TradeDate): ImportPa
       themes.set(name, {
         tradeDate,
         themeName: name,
-        limitUpCount: numberValue(row.limitUpCount || row.limit_up_count, 0),
+        limitUpCount: requiredNumberValue(row.limitUpCount || row.limit_up_count, 0),
         boardCount: numberValue(row.boardCount || row.board_count, 0),
         leaderCode: row.leaderCode || row.leader_code,
         leaderName: row.leaderName || row.leader_name,
@@ -97,8 +97,9 @@ export function normalizeImportPayload(payload: ImportPayload): ImportPayload {
 function parseCsv(raw: string): Array<Record<string, string>> {
   const lines = raw.split(/\r?\n/).filter((line) => line.trim().length > 0);
   if (lines.length === 0) return [];
-  const headers = splitCsvLine(lines[0]).map((h) => h.trim());
-  return lines.slice(1).map((line) => {
+  const [headerLine, ...bodyLines] = lines;
+  const headers = splitCsvLine(headerLine).map((h) => h.trim());
+  return bodyLines.map((line) => {
     const values = splitCsvLine(line);
     return Object.fromEntries(headers.map((header, index) => [header, values[index] ?? '']));
   });
@@ -129,6 +130,10 @@ function splitCsvLine(line: string) {
 function splitList(value?: string) {
   if (!value) return [];
   return value.split(/[|,，、;]/).map((item) => item.trim()).filter(Boolean);
+}
+
+function requiredNumberValue(value: unknown, fallback: number): number {
+  return numberValue(value, fallback) ?? fallback;
 }
 
 function numberValue(value: unknown, fallback: number | undefined): number | undefined {
