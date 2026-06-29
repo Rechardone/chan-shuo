@@ -5,7 +5,7 @@
       <h1>A股消息派 AI 复盘系统</h1>
       <p class="subtitle">消息 → 题材 → 涨停梯队 → 情绪周期 → AI 复盘</p>
     </div>
-    <button class="primary" (click)="refreshAnalyses()">刷新 AI 结果</button>
+    <button class="primary" (click)="runTask('review')" [disabled]="taskRunning">生成 AI 复盘</button>
   </header>
 
   <section class="mood-grid">
@@ -71,11 +71,21 @@
       </div>
       <p>{{ aiSummary }}</p>
       <div class="actions">
-        <button>分析今日市场</button>
-        <button>明日观察计划</button>
+        <button (click)="runTask('review')" [disabled]="taskRunning">分析今日市场</button>
+        <button (click)="runTask('plan')" [disabled]="taskRunning">明日观察计划</button>
+        <button (click)="runTask('report')" [disabled]="taskRunning">导出报告</button>
       </div>
     </section>
   </main>
+
+  <section class="panel task-panel">
+    <div class="panel-title">
+      <h2>AI 任务状态</h2>
+      <span>{{ taskRunning ? '执行中' : '空闲' }}</span>
+    </div>
+    <p>{{ taskMessage }}</p>
+    <pre *ngIf="lastTaskResult">{{ lastTaskResult.stdout || lastTaskResult.stderr }}</pre>
+  </section>
 
   <section class="panel model-panel">
     <div class="panel-title">
