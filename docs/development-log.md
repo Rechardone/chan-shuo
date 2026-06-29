@@ -12,7 +12,8 @@
 - 完成 Batch 04：OllamaProvider、AI 任务命令、Prompt 构建器、桌面端 view model。
 - 完成 Batch 05：JSON/CSV 导入、桌面端数据服务层、操作手册。
 - 完成 Batch 06：预警规则、Markdown 报告导出、Tauri SQLite dashboard command。
+- 完成 Batch 07：CI、verify 脚本、验证清单、PR 准备文档。
 
 ## 下一步
 
-继续 Batch 07：本地运行修复、完整 Tauri 数据查询、PR 合并准备。
+继续 Batch 08：根据 CI 或本地运行结果修复问题，并完善 Tauri 全量数据读取。
