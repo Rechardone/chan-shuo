@@ -1,5 +1,5 @@
 import type Database from 'better-sqlite3';
-import type { AiAnalysis, DailyReviewInput, LimitUpItem, MarketMood, NewsItem, ThemeRankItem } from '@chan-shuo/core';
+import type { AiAnalysis, DailyReviewInput, EnqueueTaskInput, LimitUpItem, MarketMood, NewsItem, PersistentTaskQueueItem, ThemeRankItem } from '@chan-shuo/core';
 
 const encode = (value: unknown) => JSON.stringify(value ?? null);
 const decodeList = (value: unknown): string[] => {
@@ -40,6 +40,37 @@ export function saveAiAnalysis(db: Database.Database, item: AiAnalysis) {
   db.prepare(sql).run(item.tradeDate, item.targetType, item.targetId, item.taskType, item.provider, item.model, item.prompt, item.result);
 }
 
+export function enqueueTask(db: Database.Database, item: EnqueueTaskInput): number {
+  const sql = 'INSERT INTO task_queue (trade_date, task, status, retry_count, max_retries) VALUES (?, ?, ?, ?, ?)';
+  const result = db.prepare(sql).run(item.tradeDate, item.task, 'queued', 0, item.maxRetries ?? 1);
+  return Number(result.lastInsertRowid);
+}
+
+export function listTasks(db: Database.Database, limit = 50): PersistentTaskQueueItem[] {
+  const rows = db.prepare('SELECT * FROM task_queue ORDER BY id DESC LIMIT ?').all(limit) as any[];
+  return rows.map(toTaskItem);
+}
+
+export function claimNextTask(db: Database.Database): PersistentTaskQueueItem | undefined {
+  const row = db.prepare("SELECT * FROM task_queue WHERE status = 'queued' ORDER BY id ASC LIMIT 1").get() as any | undefined;
+  if (!row) return undefined;
+  db.prepare("UPDATE task_queue SET status = 'running', updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(row.id);
+  return { ...toTaskItem(row), status: 'running' };
+}
+
+export function markTaskSuccess(db: Database.Database, id: number) {
+  db.prepare("UPDATE task_queue SET status = 'success', updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id);
+}
+
+export function markTaskFailed(db: Database.Database, id: number, error: string) {
+  const row = db.prepare('SELECT retry_count, max_retries FROM task_queue WHERE id = ?').get(id) as any | undefined;
+  if (!row) return;
+  const retryCount = Number(row.retry_count ?? 0) + 1;
+  const maxRetries = Number(row.max_retries ?? 1);
+  const status = retryCount <= maxRetries ? 'queued' : 'failed';
+  db.prepare('UPDATE task_queue SET status = ?, retry_count = ?, last_error = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(status, retryCount, error, id);
+}
+
 export function loadDailyReviewInput(db: Database.Database, tradeDate: string): DailyReviewInput {
   const mood = db.prepare('SELECT * FROM market_mood WHERE trade_date = ?').get(tradeDate) as any;
   const themeRows = db.prepare('SELECT * FROM theme_daily_rank WHERE trade_date = ? ORDER BY rank_no ASC').all(tradeDate) as any[];
@@ -51,5 +82,19 @@ export function loadDailyReviewInput(db: Database.Database, tradeDate: string): 
     topThemes: themeRows.map((r) => ({ tradeDate: r.trade_date, themeName: r.theme_name, limitUpCount: r.limit_up_count, boardCount: r.board_count, leaderCode: r.leader_code, leaderName: r.leader_name, rankNo: r.rank_no, heatScore: r.heat_score, source: r.source })),
     limitUps: limitRows.map((r) => ({ tradeDate: r.trade_date, code: r.code, name: r.name, firstLimitTime: r.first_limit_time, lastLimitTime: r.last_limit_time, breakCount: r.break_count, boardCount: r.board_count, reason: r.reason, themes: decodeList(r.themes), amount: r.amount, floatMarketCap: r.float_market_cap, source: r.source })),
     news: newsRows.map((r) => ({ newsTime: r.news_time, source: r.source, title: r.title, content: r.content, relatedCodes: decodeList(r.related_codes), relatedThemes: decodeList(r.related_themes), eventType: r.event_type, importanceScore: r.importance_score, aiSummary: r.ai_summary }))
+  };
+}
+
+function toTaskItem(row: any): PersistentTaskQueueItem {
+  return {
+    id: row.id,
+    tradeDate: row.trade_date,
+    task: row.task,
+    status: row.status,
+    retryCount: row.retry_count,
+    maxRetries: row.max_retries,
+    lastError: row.last_error,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
   };
 }
