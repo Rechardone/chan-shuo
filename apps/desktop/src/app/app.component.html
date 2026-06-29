@@ -74,7 +74,7 @@
         <button (click)="runTask('review')" [disabled]="taskRunning">分析今日市场</button>
         <button (click)="runTask('plan')" [disabled]="taskRunning">明日观察计划</button>
         <button (click)="runTask('report')" [disabled]="taskRunning">导出报告</button>
-        <button (click)="enqueueDailyWorkflow()">排队：复盘+计划+报告</button>
+        <button (click)="enqueueDailyWorkflow()">入库队列：复盘+计划+报告</button>
       </div>
     </section>
   </main>
@@ -90,8 +90,12 @@
 
   <section class="panel queue-panel">
     <div class="panel-title">
-      <h2>任务队列</h2>
-      <span>顺序执行，失败自动重试 1 次</span>
+      <h2>SQLite 持久任务队列</h2>
+      <span>task_queue 表 · run-once 消费</span>
+    </div>
+    <div class="actions">
+      <button (click)="refreshQueue()">刷新队列</button>
+      <button (click)="runNextQueuedTask()" [disabled]="taskRunning">执行下一条</button>
     </div>
     <div class="analysis-empty" *ngIf="queueItems.length === 0">暂无排队任务。</div>
     <article class="queue-card" *ngFor="let item of queueItems">
@@ -100,6 +104,7 @@
         <span>{{ item.tradeDate }} · retry {{ item.retryCount }}/{{ item.maxRetries }}</span>
       </header>
       <p>{{ item.message }}</p>
+      <small>{{ item.createdAt }} → {{ item.updatedAt }}</small>
     </article>
   </section>
 
