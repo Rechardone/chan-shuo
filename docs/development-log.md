@@ -21,7 +21,8 @@
 - 完成 Batch 13：生成复盘、明日计划、导出报告按钮触发本地 agent 命令，并显示任务状态。
 - 完成 Batch 14：任务日志持久化、任务日志面板、运行时文件忽略、Keychain 安全方案。
 - 完成 Batch 15：前端任务队列、串行执行、失败重试、队列面板。
+- 完成 Batch 16：SQLite 持久任务队列 schema、repository、agent CLI 队列命令。
 
 ## 下一步
 
-继续 Batch 16：把任务队列持久化到 SQLite 或 Tauri 后台 worker，并评估是否接入 `tauri-plugin-stronghold`。
+继续 Batch 17：Tauri 后台 worker 消费 SQLite 队列，或将队列 UI 切换到 SQLite 持久队列。
