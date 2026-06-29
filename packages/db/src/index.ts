@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export * from './repository.js';
 
@@ -15,7 +16,11 @@ export function openDb(path = getDbPath()) {
 
 export function initDb(path = getDbPath()) {
   const db = openDb(path);
-  const schema = readFileSync(resolve('packages/db/src/schema.sql'), 'utf8');
+  const schema = readFileSync(resolvePackageSchemaPath(), 'utf8');
   db.exec(schema);
   return db;
+}
+
+function resolvePackageSchemaPath() {
+  return resolve(dirname(fileURLToPath(import.meta.url)), 'schema.sql');
 }
