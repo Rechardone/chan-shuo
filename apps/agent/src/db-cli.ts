@@ -2,9 +2,9 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { buildDailyReviewPrompt, buildNewsClassificationPrompt, buildNextDayPlanPrompt, buildThemeAnalysisPrompt, createProvider, testProvider } from '@chan-shuo/llm';
 import { loadCsvPayload, loadJsonPayload, MockSource } from '@chan-shuo/sources';
-import { initDb, loadDailyReviewInput, openDb, saveAiAnalysis, saveLimitUps, saveMarketMood, saveNews, saveThemeRanks } from '@chan-shuo/db';
+import { claimNextTask, enqueueTask, initDb, listTasks, loadDailyReviewInput, markTaskFailed, markTaskSuccess, openDb, saveAiAnalysis, saveLimitUps, saveMarketMood, saveNews, saveThemeRanks } from '@chan-shuo/db';
 import { buildMarkdownReport, evaluateAlerts } from '@chan-shuo/core';
-import type { DailyReviewInput, TradeDate } from '@chan-shuo/core';
+import type { DailyReviewInput, PersistentTaskType, TradeDate } from '@chan-shuo/core';
 
 function dateArg(defaultDate = '2026-06-28'): TradeDate {
   return process.argv[3] ?? defaultDate;
@@ -85,6 +85,51 @@ function exportReport(date: TradeDate, outputPath = `reports/${date}.md`) {
   console.log(`markdown report exported: ${outputPath}`);
 }
 
+function addQueue(date: TradeDate, tasks: PersistentTaskType[]) {
+  const db = initDb();
+  const ids = tasks.map((task) => enqueueTask(db, { tradeDate: date, task, maxRetries: 1 }));
+  db.close();
+  console.log(JSON.stringify({ queued: ids }, null, 2));
+}
+
+function showQueue() {
+  const db = initDb();
+  const rows = listTasks(db, 50);
+  db.close();
+  console.log(JSON.stringify(rows, null, 2));
+}
+
+async function runQueueOnce() {
+  const db = initDb();
+  const item = claimNextTask(db);
+  db.close();
+  if (!item?.id) {
+    console.log('no queued task');
+    return;
+  }
+  try {
+    await runPersistentTask(item.tradeDate, item.task);
+    const nextDb = openDb();
+    markTaskSuccess(nextDb, item.id);
+    nextDb.close();
+    console.log(`queue task success: ${item.id}`);
+  } catch (error) {
+    const nextDb = openDb();
+    markTaskFailed(nextDb, item.id, error instanceof Error ? error.message : String(error));
+    nextDb.close();
+    throw error;
+  }
+}
+
+async function runPersistentTask(date: TradeDate, task: PersistentTaskType) {
+  if (task === 'review') return runTask(date, 'daily_review');
+  if (task === 'plan') return runTask(date, 'next_day_plan');
+  if (task === 'news') return runTask(date, 'news_classification');
+  if (task === 'theme') return runTask(date, 'theme_mapping');
+  if (task === 'alerts') return runAlerts(date);
+  if (task === 'report') return exportReport(date);
+}
+
 function loadLatestAnalysis(db: ReturnType<typeof openDb>, date: string, taskType: string): string | undefined {
   const row = db.prepare('SELECT result FROM ai_analysis WHERE trade_date = ? AND task_type = ? ORDER BY id DESC LIMIT 1').get(date, taskType) as { result?: string } | undefined;
   return row?.result;
@@ -101,5 +146,8 @@ else if (command === 'ai:news') await runTask(date, 'news_classification');
 else if (command === 'ai:theme') await runTask(date, 'theme_mapping');
 else if (command === 'alerts') runAlerts(date);
 else if (command === 'report:md') exportReport(date, process.argv[4]);
+else if (command === 'queue:add') addQueue(date, (process.argv[4]?.split(',') as PersistentTaskType[]) ?? ['review', 'plan', 'report']);
+else if (command === 'queue:list') showQueue();
+else if (command === 'queue:run-once') await runQueueOnce();
 else if (command === 'ai:test') console.log((await testProvider()).content);
 else throw new Error(`unknown command: ${command}`);
