@@ -1,4 +1,5 @@
-import type { AlertItem, DailyReviewInput } from './index.js';
+import type { DailyReviewInput } from './index.js';
+import type { AlertItem } from './alerts.js';
 
 export interface MarkdownReportInput {
   input: DailyReviewInput;
