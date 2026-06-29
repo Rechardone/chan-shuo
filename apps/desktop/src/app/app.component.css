@@ -75,7 +75,7 @@ h1 {
   padding: 18px;
 }
 
-.mood-card span, .panel-title span, .news-row span, .mood-card small, .model-card span, .model-card small {
+.mood-card span, .panel-title span, .news-row span, .mood-card small, .model-card span, .model-card small, .analysis-card span {
   color: #718099;
 }
 
@@ -140,7 +140,7 @@ th {
   color: #d44b3a;
 }
 
-.ladder-row p, .ai-panel p, .env-preview p, .model-card p {
+.ladder-row p, .ai-panel p, .env-preview p, .model-card p, .analysis-card p {
   margin-top: 6px;
   line-height: 1.7;
   color: #536176;
@@ -161,12 +161,12 @@ th {
   gap: 10px;
 }
 
-.actions button {
+.actions button, .env-preview button {
   background: #edf3fb;
   color: #25334c;
 }
 
-.model-panel {
+.model-panel, .analysis-panel {
   margin-top: 18px;
 }
 
@@ -218,11 +218,33 @@ th {
   color: #f7fbff;
 }
 
+.analysis-empty {
+  padding: 18px;
+  border-radius: 14px;
+  background: #f7f9fc;
+  color: #718099;
+}
+
+.analysis-card {
+  padding: 16px 0;
+  border-bottom: 1px solid #edf1f6;
+}
+
+.analysis-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.analysis-card p {
+  white-space: pre-wrap;
+}
+
 @media (max-width: 960px) {
   .mood-grid, .dashboard-grid, .model-grid, .env-preview {
     grid-template-columns: 1fr;
   }
-  .hero {
+  .hero, .analysis-card header {
     align-items: flex-start;
     flex-direction: column;
   }
