@@ -7,6 +7,8 @@ import { AiAnalysisService } from './ai-analysis.service';
 import { AiAnalysisView } from './ai-analysis.data';
 import { ModelConfigService } from './model-config.service';
 import { AgentTask, AgentTaskResult, AgentTaskService } from './agent-task.service';
+import { TaskLogService } from './task-log.service';
+import { TaskLogView } from './task-log.data';
 
 @Component({
   selector: 'app-root',
@@ -20,6 +22,7 @@ export class AppComponent {
   private readonly aiAnalysisService = inject(AiAnalysisService);
   private readonly modelConfigService = inject(ModelConfigService);
   private readonly agentTaskService = inject(AgentTaskService);
+  private readonly taskLogService = inject(TaskLogService);
 
   vm: DashboardViewModel = MOCK_DASHBOARD;
   tradeDate = this.vm.tradeDate;
@@ -29,6 +32,7 @@ export class AppComponent {
   news = this.vm.news;
   aiSummary = this.vm.aiSummary;
   analyses: AiAnalysisView[] = [];
+  taskLogs: TaskLogView[] = [];
   configMessage = '模型配置尚未保存';
   taskRunning = false;
   taskMessage = 'AI 任务待执行';
@@ -40,6 +44,7 @@ export class AppComponent {
   constructor() {
     this.refreshDashboard();
     this.refreshAnalyses();
+    this.refreshTaskLogs();
     this.modelConfigService.loadConfig().subscribe((config) => {
       this.configMessage = `已读取本地配置：${config.provider} / ${config.model}`;
     });
@@ -71,6 +76,7 @@ export class AppComponent {
       this.taskMessage = result.ok ? `执行完成：${result.command}` : `执行失败：${result.command}`;
       this.refreshDashboard();
       this.refreshAnalyses();
+      this.refreshTaskLogs();
     });
   }
 
@@ -80,6 +86,10 @@ export class AppComponent {
 
   refreshAnalyses() {
     this.aiAnalysisService.loadAnalyses(this.tradeDate).subscribe((items) => this.analyses = items);
+  }
+
+  refreshTaskLogs() {
+    this.taskLogService.loadLogs().subscribe((items) => this.taskLogs = items);
   }
 
   buildEnvPreview(preset = this.selectedPreset) {
