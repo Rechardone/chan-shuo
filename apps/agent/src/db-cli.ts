@@ -49,6 +49,8 @@ function importCsv(filePath: string, tradeDate: TradeDate) {
 async function runTask(date: TradeDate, task: 'daily_review' | 'next_day_plan' | 'news_classification' | 'theme_mapping') {
   const db = openDb();
   const input = loadDailyReviewInput(db, date);
+  if (task === 'news_classification' && input.news.length === 0) throw new Error(`no news rows for ${date}`);
+  if (task === 'theme_mapping' && input.topThemes.length === 0) throw new Error(`no theme rows for ${date}`);
   const provider = createProvider();
   const prompt = task === 'daily_review'
     ? buildDailyReviewPrompt(input)
@@ -58,7 +60,7 @@ async function runTask(date: TradeDate, task: 'daily_review' | 'next_day_plan' |
         ? buildNewsClassificationPrompt(input.news[0])
         : buildThemeAnalysisPrompt(input.topThemes[0], input);
   const result = await provider.chat({ prompt, temperature: 0.2 });
-  saveAiAnalysis(db, { tradeDate: date, targetType: task === 'news_classification' ? 'news' : task === 'theme_mapping' ? 'theme' : 'market', targetId: date, taskType: task, provider: result.provider, model: result.model, prompt, result: result.content });
+  saveAiAnalysis(db, { tradeDate: date, targetType: task === 'news_classification' ? 'news' : task === 'theme_mapping' ? 'theme' : task === 'next_day_plan' ? 'plan' : 'market', targetId: date, taskType: task, provider: result.provider, model: result.model, prompt, result: result.content });
   db.close();
   console.log(result.content);
 }
@@ -73,12 +75,19 @@ function runAlerts(date: TradeDate) {
 function exportReport(date: TradeDate, outputPath = `reports/${date}.md`) {
   const db = openDb();
   const input = loadDailyReviewInput(db, date);
+  const aiReview = loadLatestAnalysis(db, date, 'daily_review');
+  const nextDayPlan = loadLatestAnalysis(db, date, 'next_day_plan');
   db.close();
   const alerts = evaluateAlerts({ input });
-  const markdown = buildMarkdownReport({ input, alerts });
+  const markdown = buildMarkdownReport({ input, alerts, aiReview, nextDayPlan });
   mkdirSync(dirname(outputPath), { recursive: true });
   writeFileSync(outputPath, markdown, 'utf8');
   console.log(`markdown report exported: ${outputPath}`);
+}
+
+function loadLatestAnalysis(db: ReturnType<typeof openDb>, date: string, taskType: string): string | undefined {
+  const row = db.prepare('SELECT result FROM ai_analysis WHERE trade_date = ? AND task_type = ? ORDER BY id DESC LIMIT 1').get(date, taskType) as { result?: string } | undefined;
+  return row?.result;
 }
 
 const command = process.argv[2] ?? 'mock';
