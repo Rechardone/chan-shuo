@@ -13,7 +13,8 @@
 - 完成 Batch 05：JSON/CSV 导入、桌面端数据服务层、操作手册。
 - 完成 Batch 06：预警规则、Markdown 报告导出、Tauri SQLite dashboard command。
 - 完成 Batch 07：CI、verify 脚本、验证清单、PR 准备文档。
+- 完成 Batch 08：完整 Tauri dashboard 数据读取、桌面端完整 payload 映射。
 
 ## 下一步
 
-继续 Batch 08：根据 CI 或本地运行结果修复问题，并完善 Tauri 全量数据读取。
+继续 Batch 09：修复 CI 或本地运行错误；增加独立详情接口与线上模型 Provider。
