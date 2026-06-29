@@ -17,7 +17,8 @@
 - 完成 Batch 09：OpenAI-compatible Provider、云端模型文档、报告拼接最新 AI 输出。
 - 完成 Batch 10：按用户纠正改为多模型低成本策略，优先 Gemma / DeepSeek / Qwen。
 - 完成 Batch 11：桌面端模型设置面板，支持 Gemma / DeepSeek / Qwen / 自定义兼容接口选择。
+- 完成 Batch 12：AI 分析结果回看、Tauri 模型配置保存接口、配置不保存 API Key。
 
 ## 下一步
 
-继续 Batch 12：AI 分析结果回看、Tauri 配置保存接口、生成复盘按钮真正触发 agent/command。
+继续 Batch 13：生成复盘按钮真正触发命令、导出报告按钮、AI 任务状态显示。
