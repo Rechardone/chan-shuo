@@ -80,7 +80,7 @@ button:disabled {
   padding: 18px;
 }
 
-.mood-card span, .panel-title span, .news-row span, .mood-card small, .model-card span, .model-card small, .analysis-card span, .log-card span {
+.mood-card span, .panel-title span, .news-row span, .mood-card small, .model-card span, .model-card small, .analysis-card span, .log-card span, .queue-card span {
   color: #718099;
 }
 
@@ -145,7 +145,7 @@ th {
   color: #d44b3a;
 }
 
-.ladder-row p, .ai-panel p, .env-preview p, .model-card p, .analysis-card p, .task-panel p {
+.ladder-row p, .ai-panel p, .env-preview p, .model-card p, .analysis-card p, .task-panel p, .queue-card p {
   margin-top: 6px;
   line-height: 1.7;
   color: #536176;
@@ -172,7 +172,7 @@ th {
   color: #25334c;
 }
 
-.model-panel, .analysis-panel, .task-panel, .task-log-panel {
+.model-panel, .analysis-panel, .task-panel, .task-log-panel, .queue-panel {
   margin-top: 18px;
 }
 
@@ -242,12 +242,12 @@ th {
   color: #718099;
 }
 
-.analysis-card, .log-card {
+.analysis-card, .log-card, .queue-card {
   padding: 16px 0;
   border-bottom: 1px solid #edf1f6;
 }
 
-.analysis-card header, .log-card header {
+.analysis-card header, .log-card header, .queue-card header {
   display: flex;
   justify-content: space-between;
   gap: 16px;
@@ -268,7 +268,7 @@ th {
   .mood-grid, .dashboard-grid, .model-grid, .env-preview {
     grid-template-columns: 1fr;
   }
-  .hero, .analysis-card header, .log-card header {
+  .hero, .analysis-card header, .log-card header, .queue-card header {
     align-items: flex-start;
     flex-direction: column;
   }
