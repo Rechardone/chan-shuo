@@ -49,6 +49,7 @@ export class AppComponent {
     this.refreshDashboard();
     this.refreshAnalyses();
     this.refreshTaskLogs();
+    this.refreshQueue();
     this.taskQueueService.items$.subscribe((items) => this.queueItems = items);
     this.modelConfigService.loadConfig().subscribe((config) => {
       this.configMessage = `已读取本地配置：${config.provider} / ${config.model}`;
@@ -82,11 +83,28 @@ export class AppComponent {
       this.refreshDashboard();
       this.refreshAnalyses();
       this.refreshTaskLogs();
+      this.refreshQueue();
     });
   }
 
   enqueueDailyWorkflow() {
-    this.taskQueueService.enqueue(['review', 'plan', 'report'], this.tradeDate, 1);
+    this.taskQueueService.enqueue(['review', 'plan', 'report'], this.tradeDate).subscribe(() => {
+      this.taskMessage = '已加入 SQLite 持久队列：review -> plan -> report';
+    });
+  }
+
+  runNextQueuedTask() {
+    this.taskRunning = true;
+    this.taskMessage = '正在执行 SQLite 队列下一条任务';
+    this.taskQueueService.runNext().subscribe((result) => {
+      this.lastTaskResult = result;
+      this.taskRunning = false;
+      this.taskMessage = result.ok ? `队列任务完成：${result.command}` : `队列任务失败：${result.command}`;
+      this.refreshDashboard();
+      this.refreshAnalyses();
+      this.refreshTaskLogs();
+      this.refreshQueue();
+    });
   }
 
   refreshDashboard() {
@@ -99,6 +117,10 @@ export class AppComponent {
 
   refreshTaskLogs() {
     this.taskLogService.loadLogs().subscribe((items) => this.taskLogs = items);
+  }
+
+  refreshQueue() {
+    this.taskQueueService.loadQueue().subscribe();
   }
 
   buildEnvPreview(preset = this.selectedPreset) {
