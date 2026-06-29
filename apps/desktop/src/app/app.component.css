@@ -75,7 +75,7 @@ h1 {
   padding: 18px;
 }
 
-.mood-card span, .panel-title span, .news-row span, .mood-card small {
+.mood-card span, .panel-title span, .news-row span, .mood-card small, .model-card span, .model-card small {
   color: #718099;
 }
 
@@ -100,6 +100,7 @@ h1 {
   justify-content: space-between;
   align-items: baseline;
   margin-bottom: 16px;
+  gap: 18px;
 }
 
 table {
@@ -139,7 +140,7 @@ th {
   color: #d44b3a;
 }
 
-.ladder-row p, .ai-panel p {
+.ladder-row p, .ai-panel p, .env-preview p, .model-card p {
   margin-top: 6px;
   line-height: 1.7;
   color: #536176;
@@ -165,8 +166,60 @@ th {
   color: #25334c;
 }
 
+.model-panel {
+  margin-top: 18px;
+}
+
+.model-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.model-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  text-align: left;
+  border: 1px solid #e4e9f2;
+  border-radius: 16px;
+  background: #f9fbff;
+  color: #172033;
+}
+
+.model-card.selected {
+  border-color: #2f6eb2;
+  background: #eef5ff;
+}
+
+.model-card strong, .model-card span, .model-card small {
+  display: block;
+}
+
+.env-preview {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 16px;
+  align-items: start;
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #f7f9fc;
+}
+
+.env-preview pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 14px;
+  border-radius: 12px;
+  background: #14213d;
+  color: #f7fbff;
+}
+
 @media (max-width: 960px) {
-  .mood-grid, .dashboard-grid {
+  .mood-grid, .dashboard-grid, .model-grid, .env-preview {
     grid-template-columns: 1fr;
   }
   .hero {
