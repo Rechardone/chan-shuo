@@ -6,6 +6,7 @@ import { MODEL_SETTINGS, ModelPresetView, ModelSettingsViewModel } from './model
 import { AiAnalysisService } from './ai-analysis.service';
 import { AiAnalysisView } from './ai-analysis.data';
 import { ModelConfigService } from './model-config.service';
+import { AgentTask, AgentTaskResult, AgentTaskService } from './agent-task.service';
 
 @Component({
   selector: 'app-root',
@@ -18,6 +19,7 @@ export class AppComponent {
   private readonly dashboardService = inject(MarketDashboardService);
   private readonly aiAnalysisService = inject(AiAnalysisService);
   private readonly modelConfigService = inject(ModelConfigService);
+  private readonly agentTaskService = inject(AgentTaskService);
 
   vm: DashboardViewModel = MOCK_DASHBOARD;
   tradeDate = this.vm.tradeDate;
@@ -28,13 +30,16 @@ export class AppComponent {
   aiSummary = this.vm.aiSummary;
   analyses: AiAnalysisView[] = [];
   configMessage = '模型配置尚未保存';
+  taskRunning = false;
+  taskMessage = 'AI 任务待执行';
+  lastTaskResult?: AgentTaskResult;
 
   settings: ModelSettingsViewModel = MODEL_SETTINGS;
   selectedPreset = this.settings.presets.find((preset) => preset.id === this.settings.selectedPresetId) ?? this.settings.presets[0];
 
   constructor() {
-    this.dashboardService.loadDashboard().subscribe((vm) => this.applyViewModel(vm));
-    this.aiAnalysisService.loadAnalyses(this.tradeDate).subscribe((items) => this.analyses = items);
+    this.refreshDashboard();
+    this.refreshAnalyses();
     this.modelConfigService.loadConfig().subscribe((config) => {
       this.configMessage = `已读取本地配置：${config.provider} / ${config.model}`;
     });
@@ -55,6 +60,22 @@ export class AppComponent {
     }).subscribe((config) => {
       this.configMessage = `已保存：${config.provider} / ${config.model}`;
     });
+  }
+
+  runTask(task: AgentTask) {
+    this.taskRunning = true;
+    this.taskMessage = `正在执行：${task}`;
+    this.agentTaskService.runTask(task, this.tradeDate).subscribe((result) => {
+      this.lastTaskResult = result;
+      this.taskRunning = false;
+      this.taskMessage = result.ok ? `执行完成：${result.command}` : `执行失败：${result.command}`;
+      this.refreshDashboard();
+      this.refreshAnalyses();
+    });
+  }
+
+  refreshDashboard() {
+    this.dashboardService.loadDashboard(this.tradeDate).subscribe((vm) => this.applyViewModel(vm));
   }
 
   refreshAnalyses() {
