@@ -30,6 +30,7 @@
     }
   },
   "devDependencies": {
+    "@types/node": "^20.17.10",
     "typescript": "5.5.4",
     "tsx": "^4.19.2"
   }
