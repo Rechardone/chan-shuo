@@ -14,7 +14,8 @@
 - 完成 Batch 06：预警规则、Markdown 报告导出、Tauri SQLite dashboard command。
 - 完成 Batch 07：CI、verify 脚本、验证清单、PR 准备文档。
 - 完成 Batch 08：完整 Tauri dashboard 数据读取、桌面端完整 payload 映射。
+- 完成 Batch 09：OpenAI-compatible Provider、云端模型文档、报告拼接最新 AI 输出。
 
 ## 下一步
 
-继续 Batch 09：修复 CI 或本地运行错误；增加独立详情接口与线上模型 Provider。
+继续 Batch 10：模型设置页面、AI 分析结果回看、独立详情接口。
