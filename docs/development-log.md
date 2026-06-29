@@ -20,7 +20,8 @@
 - 完成 Batch 12：AI 分析结果回看、Tauri 模型配置保存接口、配置不保存 API Key。
 - 完成 Batch 13：生成复盘、明日计划、导出报告按钮触发本地 agent 命令，并显示任务状态。
 - 完成 Batch 14：任务日志持久化、任务日志面板、运行时文件忽略、Keychain 安全方案。
+- 完成 Batch 15：前端任务队列、串行执行、失败重试、队列面板。
 
 ## 下一步
 
-继续 Batch 15：真实 Keychain/Stronghold、任务队列并发控制、失败重试策略。
+继续 Batch 16：把任务队列持久化到 SQLite 或 Tauri 后台 worker，并评估是否接入 `tauri-plugin-stronghold`。
