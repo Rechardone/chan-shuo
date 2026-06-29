@@ -175,16 +175,53 @@ USE_OLLAMA=1 OLLAMA_MODEL=gemma3:4b pnpm llm:test
 USE_OLLAMA=1 OLLAMA_MODEL=gemma3:4b pnpm ai:review 2026-06-28
 ```
 
-可选环境变量：
+## 10. 接入 OpenAI-compatible 线上模型
+
+复制环境变量模板：
+
+```bash
+cp .env.example .env
+```
+
+设置这些变量：
+
+```text
+USE_CLOUD_LLM=1
+LLM_PROVIDER=openai-compatible
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_MODEL=gpt-4o-mini
+LLM_API_KEY=你的本地密钥
+```
+
+测试线上模型：
+
+```bash
+USE_CLOUD_LLM=1 LLM_API_KEY=你的本地密钥 pnpm llm:test
+```
+
+使用线上模型生成复盘：
+
+```bash
+USE_CLOUD_LLM=1 LLM_API_KEY=你的本地密钥 pnpm ai:review 2026-06-28
+```
+
+不要把 `.env` 或密钥提交到 Git。
+
+## 11. 可选环境变量
 
 ```text
 USE_OLLAMA=1
 OLLAMA_MODEL=gemma3:4b
 OLLAMA_BASE_URL=http://127.0.0.1:11434
+USE_CLOUD_LLM=1
+LLM_PROVIDER=openai-compatible
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_MODEL=gpt-4o-mini
+LLM_API_KEY=
 CHAN_SHUO_DB=data/market-core.db
 ```
 
-## 10. 启动桌面端
+## 12. 启动桌面端
 
 ```bash
 pnpm desktop:dev
@@ -192,13 +229,13 @@ pnpm desktop:dev
 
 当前桌面端会优先尝试通过 Tauri command 读取本地 SQLite。普通浏览器开发模式下，如果 Tauri API 不可用，会自动回退到 mock view model。
 
-## 11. 类型检查
+## 13. 类型检查
 
 ```bash
 pnpm typecheck
 ```
 
-## 12. 推荐开发顺序
+## 14. 推荐开发顺序
 
 1. 先跑通 `pnpm install`。
 2. 执行 `pnpm db:init`。
@@ -208,8 +245,8 @@ pnpm typecheck
 6. 执行 `pnpm report:md 2026-06-28`。
 7. 执行 `pnpm desktop:dev`。
 8. 再测试 JSON/CSV 导入。
-9. 最后接 Ollama。
+9. 最后接 Ollama 或线上模型。
 
-## 13. 合规边界
+## 15. 合规边界
 
 本项目只做个人研究、复盘、合法数据导入和 AI 辅助分析。不要实现破解接口、绕过登录、盗用 token、高频抓取、自动交易下单或商业化分发受限数据。
