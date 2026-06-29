@@ -6,7 +6,7 @@
 
 1. 先用 Mock / JSON / CSV 数据跑通数据库与看板。
 2. 再接合法数据源或用户导出数据。
-3. 接入本地 Ollama 模型与 OpenAI-compatible 线上模型。
+3. 优先支持多模型低成本方案：本地 Gemma / DeepSeek / Qwen，经 API 接 DeepSeek / Qwen 等 OpenAI-compatible 服务。
 4. 生成盘中摘要、盘后复盘、明日观察计划。
 
 ## 技术栈
@@ -16,7 +16,7 @@
 - apps/agent: Node.js + TypeScript CLI
 - packages/db: better-sqlite3 + schema.sql
 - packages/core: 类型定义、规则模型、预警、报告导出
-- packages/llm: Mock / Ollama / OpenAI-compatible 适配器
+- packages/llm: Mock / Ollama / DeepSeek / Qwen / OpenAI-compatible 适配器
 - packages/sources: Mock / JSON / CSV 数据源适配器
 
 ## 快速开始
@@ -31,16 +31,18 @@ pnpm report:md 2026-06-28
 pnpm desktop:dev
 ```
 
-默认 AI 复盘使用 MockLLM。接本地 Ollama：
+默认 AI 复盘使用 MockLLM。接本地 Ollama 多模型：
 
 ```bash
 USE_OLLAMA=1 OLLAMA_MODEL=gemma3:4b pnpm ai:review 2026-06-28
+USE_OLLAMA=1 OLLAMA_MODEL=deepseek-r1:7b pnpm ai:review 2026-06-28
+USE_OLLAMA=1 OLLAMA_MODEL=qwen2.5:7b pnpm ai:review 2026-06-28
 ```
 
-接 OpenAI-compatible 线上模型：
+接 DeepSeek API：
 
 ```bash
-USE_CLOUD_LLM=1 LLM_API_KEY=你的本地密钥 pnpm ai:review 2026-06-28
+USE_CLOUD_LLM=1 LLM_PROVIDER=deepseek LLM_API_KEY=你的本地密钥 pnpm ai:review 2026-06-28
 ```
 
 ## 数据导入
@@ -88,6 +90,7 @@ docs/batch-06-summary.md
 docs/batch-07-summary.md
 docs/batch-08-summary.md
 docs/batch-09-summary.md
+docs/batch-10-summary.md
 ```
 
 ## 合规边界
