@@ -236,12 +236,14 @@ fn load_stock_source_status(db_path: Option<String>) -> Result<StockSourceStatus
     let default_path = default_ths_stockname_path();
     let file_exists = default_path.exists();
     let stock_count = open_db(db_path).map(|conn| count_stock_rows(&conn)).unwrap_or(0);
-    let message = if stock_count > 0 {
-        format!("已导入股票基础库 {} 条", stock_count)
+    let message = if stock_count > 0 && file_exists {
+        format!("已导入股票基础库 {} 条，且可访问 Mac 同花顺默认路径", stock_count)
+    } else if stock_count > 0 {
+        format!("已导入股票基础库 {} 条；当前 App 无权限或无法直接访问 Mac 同花顺容器路径", stock_count)
     } else if file_exists {
         "检测到 Mac 同花顺股票基础库，可点击导入".into()
     } else {
-        "未检测到 Mac 同花顺股票基础库".into()
+        "未检测到 Mac 同花顺股票基础库，可能是未安装、路径不同，或 App 没有访问权限".into()
     };
     Ok(StockSourceStatus { default_path: default_path.to_string_lossy().to_string(), file_exists, stock_count, message })
 }
@@ -249,9 +251,6 @@ fn load_stock_source_status(db_path: Option<String>) -> Result<StockSourceStatus
 #[tauri::command]
 fn import_ths_stock_names(path: Option<String>) -> Result<StockSourceStatus, String> {
     let stock_path = path.map(PathBuf::from).unwrap_or_else(default_ths_stockname_path);
-    if !stock_path.exists() {
-        return Err(format!("stockname ini not found: {}", stock_path.to_string_lossy()));
-    }
     let command = format!("pnpm --filter @chan-shuo/agent import:ths-stockname {}", stock_path.to_string_lossy());
     let output = Command::new("pnpm")
         .args(["--filter", "@chan-shuo/agent", "import:ths-stockname", stock_path.to_string_lossy().as_ref()])
@@ -268,7 +267,7 @@ fn import_ths_stock_names(path: Option<String>) -> Result<StockSourceStatus, Str
         created_at: now_id(),
     })?;
     if !output.status.success() {
-        return Err(String::from_utf8_lossy(&output.stderr).to_string());
+        return Err(format!("{}\n{}", String::from_utf8_lossy(&output.stderr), String::from_utf8_lossy(&output.stdout)));
     }
     load_stock_source_status(None)
 }
