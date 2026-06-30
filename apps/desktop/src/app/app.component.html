@@ -172,11 +172,20 @@
   <section class="panel queue-panel">
     <div class="panel-title">
       <h2>SQLite 持久任务队列</h2>
-      <span>task_queue 表 · run-once 消费</span>
+      <span>queued {{ queueCount('queued') }} / running {{ queueCount('running') }} / failed {{ queueCount('failed') }}</span>
+    </div>
+    <div class="queue-stats">
+      <article><span>等待</span><strong>{{ queueCount('queued') }}</strong></article>
+      <article><span>执行中</span><strong>{{ queueCount('running') }}</strong></article>
+      <article><span>成功</span><strong>{{ queueCount('success') }}</strong></article>
+      <article><span>失败</span><strong>{{ queueCount('failed') }}</strong></article>
+      <article><span>取消</span><strong>{{ queueCount('cancelled') }}</strong></article>
     </div>
     <div class="actions">
       <button (click)="refreshQueue()">刷新队列</button>
-      <button (click)="runNextQueuedTask()" [disabled]="taskRunning">执行下一条</button>
+      <button (click)="runNextQueuedTask()" [disabled]="taskRunning || queueCount('queued') === 0">执行下一条</button>
+      <button (click)="cancelQueuedTasks()" [disabled]="taskRunning || (queueCount('queued') + queueCount('running')) === 0">取消等待任务</button>
+      <button (click)="clearFinishedTasks()" [disabled]="taskRunning || (queueCount('success') + queueCount('failed') + queueCount('cancelled')) === 0">清理历史任务</button>
     </div>
     <div class="analysis-empty" *ngIf="queueItems.length === 0">暂无排队任务。</div>
     <article class="queue-card" *ngFor="let item of queueItems">
