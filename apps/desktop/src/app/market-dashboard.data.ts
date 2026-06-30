@@ -25,6 +25,21 @@ export interface NewsRowView {
   tag: string;
 }
 
+export interface DataQualityCheckView {
+  key: string;
+  label: string;
+  ok: boolean;
+  count: number;
+  message: string;
+}
+
+export interface DataQualityView {
+  level: 'good' | 'partial' | 'empty';
+  score: number;
+  summary: string;
+  checks: DataQualityCheckView[];
+}
+
 export interface DashboardViewModel {
   tradeDate: string;
   moodCards: MoodCardView[];
@@ -32,6 +47,7 @@ export interface DashboardViewModel {
   limits: LimitRowView[];
   news: NewsRowView[];
   aiSummary: string;
+  dataQuality: DataQualityView;
 }
 
 export const MOCK_DASHBOARD: DashboardViewModel = {
@@ -58,5 +74,16 @@ export const MOCK_DASHBOARD: DashboardViewModel = {
     { time: '10:08', title: 'AI硬件方向盘中异动扩散', tag: '题材发酵' },
     { time: '13:37', title: '高位股出现分歧，炸板率上升', tag: '风险信号' }
   ],
-  aiSummary: '今日市场情绪偏修复，机器人为主线候选。明日重点观察龙头晋级、昨日涨停溢价与炸板率变化。'
+  aiSummary: '今日市场情绪偏修复，机器人为主线候选。明日重点观察龙头晋级、昨日涨停溢价与炸板率变化。',
+  dataQuality: {
+    level: 'good',
+    score: 100,
+    summary: '数据较完整，可以生成复盘。',
+    checks: [
+      { key: 'market_mood', label: '市场情绪', ok: true, count: 1, message: '已读取市场情绪' },
+      { key: 'limit_up_daily', label: '涨停池', ok: true, count: 3, message: '已读取 3 条涨停数据' },
+      { key: 'theme_daily_rank', label: '题材排行', ok: true, count: 3, message: '已读取 3 条题材数据' },
+      { key: 'news_flash', label: '新闻快讯', ok: true, count: 3, message: '已读取 3 条新闻数据' }
+    ]
+  }
 };
