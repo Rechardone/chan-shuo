@@ -11,6 +11,7 @@ import { TaskLogService } from './task-log.service';
 import { TaskLogView } from './task-log.data';
 import { TaskQueueService } from './task-queue.service';
 import { TaskQueueItemView } from './task-queue.data';
+import { DEFAULT_STOCK_SOURCE_STATUS, StockSourceService, StockSourceStatus } from './stock-source.service';
 
 @Component({
   selector: 'app-root',
@@ -26,6 +27,7 @@ export class AppComponent {
   private readonly agentTaskService = inject(AgentTaskService);
   private readonly taskLogService = inject(TaskLogService);
   private readonly taskQueueService = inject(TaskQueueService);
+  private readonly stockSourceService = inject(StockSourceService);
 
   vm: DashboardViewModel = MOCK_DASHBOARD;
   tradeDate = this.vm.tradeDate;
@@ -37,6 +39,8 @@ export class AppComponent {
   analyses: AiAnalysisView[] = [];
   taskLogs: TaskLogView[] = [];
   queueItems: TaskQueueItemView[] = [];
+  stockSourceStatus: StockSourceStatus = DEFAULT_STOCK_SOURCE_STATUS;
+  stockImporting = false;
   configMessage = '模型配置尚未保存';
   taskRunning = false;
   taskMessage = 'AI 任务待执行';
@@ -50,6 +54,7 @@ export class AppComponent {
     this.refreshAnalyses();
     this.refreshTaskLogs();
     this.refreshQueue();
+    this.refreshStockSourceStatus();
     this.taskQueueService.items$.subscribe((items) => this.queueItems = items);
     this.modelConfigService.loadConfig().subscribe((config) => {
       this.configMessage = `已读取本地配置：${config.provider} / ${config.model}`;
@@ -121,6 +126,20 @@ export class AppComponent {
 
   refreshQueue() {
     this.taskQueueService.loadQueue().subscribe();
+  }
+
+  refreshStockSourceStatus() {
+    this.stockSourceService.loadStatus().subscribe((status) => this.stockSourceStatus = status);
+  }
+
+  importThsStockNames() {
+    this.stockImporting = true;
+    this.stockSourceStatus = { ...this.stockSourceStatus, message: '正在导入 Mac 同花顺股票基础库...' };
+    this.stockSourceService.importThsStockNames().subscribe((status) => {
+      this.stockImporting = false;
+      this.stockSourceStatus = status;
+      this.refreshTaskLogs();
+    });
   }
 
   buildEnvPreview(preset = this.selectedPreset) {
