@@ -1,13 +1,18 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { buildDailyReviewPrompt, buildNewsClassificationPrompt, buildNextDayPlanPrompt, buildThemeAnalysisPrompt, createProvider, testProvider } from '@chan-shuo/llm';
-import { loadCsvPayload, loadJsonPayload, MockSource } from '@chan-shuo/sources';
-import { claimNextTask, enqueueTask, initDb, listTasks, loadDailyReviewInput, markTaskFailed, markTaskSuccess, openDb, saveAiAnalysis, saveLimitUps, saveMarketMood, saveNews, saveThemeRanks } from '@chan-shuo/db';
+import { filterAStockEntries, loadCsvPayload, loadJsonPayload, loadThsMacStockNameIni, MockSource } from '@chan-shuo/sources';
+import { claimNextTask, countStocks, enqueueTask, initDb, listTasks, loadDailyReviewInput, markTaskFailed, markTaskSuccess, openDb, saveAiAnalysis, saveLimitUps, saveMarketMood, saveNews, saveStocks, saveThemeRanks } from '@chan-shuo/db';
 import { buildMarkdownReport, evaluateAlerts } from '@chan-shuo/core';
 import type { DailyReviewInput, PersistentTaskType, TradeDate } from '@chan-shuo/core';
 
 function dateArg(defaultDate = '2026-06-28'): TradeDate {
   return process.argv[3] ?? defaultDate;
+}
+
+function requiredArg(value: string | undefined, name: string): string {
+  if (!value) throw new Error(`${name} is required`);
+  return value;
 }
 
 function persistInput(input: DailyReviewInput) {
@@ -44,6 +49,21 @@ function importCsv(filePath: string, tradeDate: TradeDate) {
   const input = loadCsvPayload(filePath, tradeDate);
   persistInput(input);
   console.log(`csv data imported: ${filePath} -> ${input.tradeDate}`);
+}
+
+function importThsMacStockName(filePath: string) {
+  const parsed = loadThsMacStockNameIni(filePath);
+  const stocks = filterAStockEntries(parsed.entries).map((entry) => ({
+    code: entry.code,
+    name: entry.name,
+    market: entry.market,
+    industry: undefined
+  }));
+  const db = initDb();
+  saveStocks(db, stocks);
+  const total = countStocks(db);
+  db.close();
+  console.log(JSON.stringify({ source: 'ths-mac-stockname', filePath, configVersion: parsed.configVersion, parsedEntries: parsed.entries.length, importedStocks: stocks.length, totalStocks: total }, null, 2));
 }
 
 async function runTask(date: TradeDate, task: 'daily_review' | 'next_day_plan' | 'news_classification' | 'theme_mapping') {
@@ -138,8 +158,9 @@ function loadLatestAnalysis(db: ReturnType<typeof openDb>, date: string, taskTyp
 const command = process.argv[2] ?? 'mock';
 const date = dateArg();
 if (command === 'mock') await saveMock(date);
-else if (command === 'import:json') importJson(process.argv[3]);
-else if (command === 'import:csv') importCsv(process.argv[3], process.argv[4] ?? '2026-06-28');
+else if (command === 'import:json') importJson(requiredArg(process.argv[3], 'json file path'));
+else if (command === 'import:csv') importCsv(requiredArg(process.argv[3], 'csv file path'), process.argv[4] ?? '2026-06-28');
+else if (command === 'import:ths-stockname') importThsMacStockName(requiredArg(process.argv[3], 'ths stockname ini path'));
 else if (command === 'ai:review') await runTask(date, 'daily_review');
 else if (command === 'ai:plan') await runTask(date, 'next_day_plan');
 else if (command === 'ai:news') await runTask(date, 'news_classification');
