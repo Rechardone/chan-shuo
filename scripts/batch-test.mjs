@@ -1,12 +1,15 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 
+const workspaceRoot = process.cwd();
 const tradeDate = process.argv[2] ?? '2026-06-28';
 const runId = new Date().toISOString().replace(/[:.]/g, '-');
 const defaultReportPath = `reports/batch-test-${tradeDate}-${runId}.md`;
 const reportPath = process.argv[3] ?? defaultReportPath;
+const reportAbsPath = resolve(workspaceRoot, reportPath);
 const reviewReportPath = `reports/batch-review-${tradeDate}-${runId}.md`;
+const reviewReportAbsPath = resolve(workspaceRoot, reviewReportPath);
 const startedAt = new Date().toISOString();
 
 const cases = [
@@ -55,18 +58,18 @@ const cases = [
   {
     batch: 'Batch 4',
     name: 'Markdown report export',
-    command: ['pnpm', ['report:md', tradeDate, reviewReportPath]],
+    command: ['pnpm', ['report:md', tradeDate, reviewReportAbsPath]],
     expect: ['markdown report exported']
   },
   {
     batch: 'Batch 4',
     name: 'Markdown report file exists',
-    fileExists: reviewReportPath
+    fileExists: reviewReportAbsPath
   },
   {
     batch: 'Batch 4',
     name: 'Markdown report contains data quality section',
-    fileContains: { path: reviewReportPath, text: '## 0. 数据质量' }
+    fileContains: { path: reviewReportAbsPath, text: '## 0. 数据质量' }
   },
   {
     batch: 'Batch 5',
@@ -92,21 +95,20 @@ const results = [];
 for (const testCase of cases) {
   const start = Date.now();
   if (testCase.fileExists) {
-    const ok = existsSync(resolve(testCase.fileExists));
+    const ok = existsSync(testCase.fileExists);
     results.push({ ...testCase, ok, status: ok ? 0 : 1, durationMs: Date.now() - start, stdout: ok ? `file exists: ${testCase.fileExists}` : '', stderr: ok ? '' : `missing file: ${testCase.fileExists}`, missing: ok ? [] : [testCase.fileExists] });
     continue;
   }
   if (testCase.fileContains) {
-    const filePath = resolve(testCase.fileContains.path);
-    const exists = existsSync(filePath);
-    const content = exists ? readFileSync(filePath, 'utf8') : '';
+    const exists = existsSync(testCase.fileContains.path);
+    const content = exists ? readFileSync(testCase.fileContains.path, 'utf8') : '';
     const ok = exists && content.includes(testCase.fileContains.text);
     results.push({ ...testCase, ok, status: ok ? 0 : 1, durationMs: Date.now() - start, stdout: ok ? `found text in file: ${testCase.fileContains.path}` : content, stderr: exists ? '' : `missing file: ${testCase.fileContains.path}`, missing: ok ? [] : [exists ? testCase.fileContains.text : testCase.fileContains.path] });
     continue;
   }
 
   const [cmd, args] = testCase.command;
-  const output = spawnSync(cmd, args, { encoding: 'utf8', env: { ...process.env, NG_CLI_ANALYTICS: 'false' } });
+  const output = spawnSync(cmd, args, { encoding: 'utf8', env: { ...process.env, NG_CLI_ANALYTICS: 'false' }, cwd: workspaceRoot });
   const stdout = output.stdout ?? '';
   const stderr = output.stderr ?? '';
   const combined = `${stdout}\n${stderr}`;
@@ -134,8 +136,10 @@ lines.push(`# Chan Shuo Batch Test Report`);
 lines.push('');
 lines.push(`- Trade date: ${tradeDate}`);
 lines.push(`- Run id: ${runId}`);
+lines.push(`- Workspace root: ${workspaceRoot}`);
 lines.push(`- Batch report: ${reportPath}`);
 lines.push(`- Review report: ${reviewReportPath}`);
+lines.push(`- Review report absolute path: ${reviewReportAbsPath}`);
 lines.push(`- Started at: ${startedAt}`);
 lines.push(`- Finished at: ${new Date().toISOString()}`);
 lines.push(`- Passed: ${passed}`);
@@ -165,10 +169,10 @@ for (const item of results) {
 lines.push('');
 lines.push('> This report is generated locally and should not be committed when it contains runtime output.');
 
-mkdirSync(reportPath.split('/').slice(0, -1).join('/') || '.', { recursive: true });
-writeFileSync(reportPath, lines.join('\n'), 'utf8');
-console.log(`batch test report: ${reportPath}`);
-console.log(`review report: ${reviewReportPath}`);
+mkdirSync(dirname(reportAbsPath), { recursive: true });
+writeFileSync(reportAbsPath, lines.join('\n'), 'utf8');
+console.log(`batch test report: ${reportAbsPath}`);
+console.log(`review report: ${reviewReportAbsPath}`);
 console.log(`passed=${passed} failed=${failed}`);
 process.exit(failed === 0 ? 0 : 1);
 
