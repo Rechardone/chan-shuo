@@ -1,4 +1,4 @@
-use rusqlite::{Connection, OptionalExtension};
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -204,7 +204,7 @@ fn enqueue_persistent_tasks(db_path: Option<String>, trade_date: String, tasks: 
         validate_queue_task(&task)?;
         conn.prepare("INSERT INTO task_queue (trade_date, task, status, retry_count, max_retries) VALUES (?, ?, 'queued', 0, 1)")
             .map_err(|err| err.to_string())?
-            .run(trade_date.as_str(), task.as_str())
+            .execute(params![trade_date.as_str(), task.as_str()])
             .map_err(|err| err.to_string())?;
     }
     load_persistent_tasks_from_conn(&conn, 50)
