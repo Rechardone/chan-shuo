@@ -16,6 +16,34 @@
     </article>
   </section>
 
+  <section class="panel source-panel">
+    <div class="panel-title">
+      <h2>数据源状态</h2>
+      <span>{{ stockSourceStatus.stock_count > 0 ? '同花顺基础库已接入' : '等待接入真实数据' }}</span>
+    </div>
+    <div class="source-grid">
+      <article>
+        <span>股票基础库</span>
+        <strong>{{ stockSourceStatus.stock_count }}</strong>
+        <small>{{ stockSourceStatus.message }}</small>
+      </article>
+      <article>
+        <span>Mac 同花顺路径</span>
+        <strong>{{ stockSourceStatus.file_exists ? '已检测到' : '未检测到' }}</strong>
+        <small>{{ stockSourceStatus.default_path }}</small>
+      </article>
+      <article>
+        <span>复盘行情源</span>
+        <strong>待接入</strong>
+        <small>涨停池 / 炸板池 / 题材排行 / 新闻快讯仍在接口分析阶段</small>
+      </article>
+    </div>
+    <div class="actions">
+      <button (click)="refreshStockSourceStatus()">刷新数据源状态</button>
+      <button (click)="importThsStockNames()" [disabled]="stockImporting || !stockSourceStatus.file_exists">一键导入同花顺股票基础库</button>
+    </div>
+  </section>
+
   <main class="dashboard-grid">
     <section class="panel themes">
       <div class="panel-title">
