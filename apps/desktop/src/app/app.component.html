@@ -29,7 +29,7 @@
       </article>
       <article>
         <span>Mac 同花顺路径</span>
-        <strong>{{ stockSourceStatus.file_exists ? '已检测到' : '未检测到' }}</strong>
+        <strong>{{ stockSourceStatus.file_exists ? '已检测到' : '未检测到/无权限' }}</strong>
         <small>{{ stockSourceStatus.default_path }}</small>
       </article>
       <article>
@@ -40,8 +40,11 @@
     </div>
     <div class="actions">
       <button (click)="refreshStockSourceStatus()">刷新数据源状态</button>
-      <button (click)="importThsStockNames()" [disabled]="stockImporting || !stockSourceStatus.file_exists">一键导入同花顺股票基础库</button>
+      <button (click)="importThsStockNames()" [disabled]="stockImporting">尝试导入同花顺股票基础库</button>
     </div>
+    <p class="hint-text" *ngIf="!stockSourceStatus.file_exists">
+      如果命令行已经成功导入，但桌面端显示未检测到，通常是 macOS 沙盒/隐私权限限制。可以继续使用已入库的股票基础库；需要一键导入时，请给 Terminal / Tauri 开发进程或打包后的 App 授予完整磁盘访问权限。
+    </p>
   </section>
 
   <main class="dashboard-grid">
