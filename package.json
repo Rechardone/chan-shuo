@@ -9,6 +9,7 @@
     "agent:mock": "pnpm --filter @chan-shuo/agent mock",
     "agent:import:json": "pnpm --filter @chan-shuo/agent import:json",
     "agent:import:csv": "pnpm --filter @chan-shuo/agent import:csv",
+    "agent:import:ths-stockname": "pnpm --filter @chan-shuo/agent import:ths-stockname",
     "ai:review": "pnpm --filter @chan-shuo/agent review",
     "ai:plan": "pnpm --filter @chan-shuo/agent plan",
     "ai:news": "pnpm --filter @chan-shuo/agent news",
