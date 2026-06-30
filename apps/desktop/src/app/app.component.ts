@@ -11,6 +11,7 @@ import { TaskLogService } from './task-log.service';
 import { TaskLogView } from './task-log.data';
 import { TaskQueueService } from './task-queue.service';
 import { QueueItemStatus, TaskQueueItemView } from './task-queue.data';
+import { ReportCenterService, ReportFileView } from './report-center.service';
 import { DEFAULT_STOCK_SOURCE_STATUS, StockBasicView, StockSourceService, StockSourceStatus } from './stock-source.service';
 
 @Component({
@@ -27,6 +28,7 @@ export class AppComponent {
   private readonly agentTaskService = inject(AgentTaskService);
   private readonly taskLogService = inject(TaskLogService);
   private readonly taskQueueService = inject(TaskQueueService);
+  private readonly reportCenterService = inject(ReportCenterService);
   private readonly stockSourceService = inject(StockSourceService);
 
   vm: DashboardViewModel = MOCK_DASHBOARD;
@@ -40,6 +42,8 @@ export class AppComponent {
   analyses: AiAnalysisView[] = [];
   taskLogs: TaskLogView[] = [];
   queueItems: TaskQueueItemView[] = [];
+  reports: ReportFileView[] = [];
+  reportsMessage = '报告中心待刷新';
   stockSourceStatus: StockSourceStatus = DEFAULT_STOCK_SOURCE_STATUS;
   stockImporting = false;
   stockQuery = '';
@@ -59,6 +63,7 @@ export class AppComponent {
     this.refreshAnalyses();
     this.refreshTaskLogs();
     this.refreshQueue();
+    this.refreshReports();
     this.refreshStockSourceStatus();
     this.taskQueueService.items$.subscribe((items) => this.queueItems = items);
     this.modelConfigService.loadConfig().subscribe((config) => {
@@ -95,6 +100,7 @@ export class AppComponent {
       this.refreshAnalyses();
       this.refreshTaskLogs();
       this.refreshQueue();
+      if (task === 'report') this.refreshReports();
     });
   }
 
@@ -121,6 +127,7 @@ export class AppComponent {
       this.refreshAnalyses();
       this.refreshTaskLogs();
       this.refreshQueue();
+      this.refreshReports();
     });
   }
 
@@ -150,6 +157,20 @@ export class AppComponent {
 
   refreshQueue() {
     this.taskQueueService.loadQueue().subscribe();
+  }
+
+  refreshReports() {
+    this.reportCenterService.listReports().subscribe((items) => {
+      this.reports = items;
+      this.reportsMessage = items.length > 0 ? `已读取 ${items.length} 份本地报告` : '暂无本地 Markdown 报告';
+    });
+  }
+
+  openReportsDir() {
+    this.reportCenterService.openReportsDir().subscribe((message) => {
+      this.reportsMessage = `报告目录：${message}`;
+      this.refreshReports();
+    });
   }
 
   refreshStockSourceStatus() {
@@ -192,6 +213,17 @@ export class AppComponent {
     return this.queueItems.filter((item) => item.status === status).length;
   }
 
+  formatReportSize(bytes: number) {
+    if (bytes < 1024) return `${bytes} B`;
+    return `${Math.round(bytes / 102.4) / 10} KB`;
+  }
+
+  formatReportModified(value: string) {
+    const seconds = Number(value);
+    if (!Number.isFinite(seconds) || seconds <= 0) return '-';
+    return new Date(seconds * 1000).toLocaleString();
+  }
+
   qualityLabel(level: DataQualityView['level']) {
     return { good: '数据完整', partial: '部分缺失', empty: '缺少数据' }[level];
   }
@@ -221,6 +253,7 @@ export class AppComponent {
       this.refreshAnalyses();
       this.refreshTaskLogs();
       this.refreshQueue();
+      this.refreshReports();
       return;
     }
 
