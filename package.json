@@ -15,6 +15,7 @@
     "ai:news": "pnpm --filter @chan-shuo/agent news",
     "ai:theme": "pnpm --filter @chan-shuo/agent theme",
     "alerts": "pnpm --filter @chan-shuo/agent alerts",
+    "quality": "pnpm --filter @chan-shuo/agent quality",
     "report:md": "pnpm --filter @chan-shuo/agent report:md",
     "queue:add": "pnpm --filter @chan-shuo/agent queue:add",
     "queue:list": "pnpm --filter @chan-shuo/agent queue:list",
@@ -22,7 +23,7 @@
     "llm:test": "pnpm --filter @chan-shuo/agent llm:test",
     "desktop:dev": "pnpm --filter @chan-shuo/desktop dev",
     "desktop:build": "pnpm --filter @chan-shuo/desktop build",
-    "verify": "pnpm db:init && pnpm agent:mock 2026-06-28 && pnpm ai:review 2026-06-28 && pnpm alerts 2026-06-28 && pnpm report:md 2026-06-28 reports/verify.md",
+    "verify": "pnpm db:init && pnpm agent:mock 2026-06-28 && pnpm quality 2026-06-28 && pnpm ai:review 2026-06-28 && pnpm alerts 2026-06-28 && pnpm report:md 2026-06-28 reports/verify.md",
     "typecheck": "pnpm -r typecheck"
   },
   "pnpm": {
