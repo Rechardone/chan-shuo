@@ -86,8 +86,11 @@ CREATE TABLE IF NOT EXISTS news_flash (
   importance_score REAL,
   ai_summary TEXT,
   raw_json TEXT,
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(news_time, source, title)
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_news_flash_unique ON news_flash(news_time, source, title);
 
 CREATE TABLE IF NOT EXISTS ai_analysis (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
