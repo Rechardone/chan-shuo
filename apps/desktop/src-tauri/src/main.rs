@@ -73,6 +73,14 @@ struct StockBasicRow {
     updated_at: String,
 }
 
+#[derive(Serialize)]
+struct ReportFileRow {
+    name: String,
+    path: String,
+    size_bytes: u64,
+    modified_at: String,
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 struct TaskLogEntry {
     id: String,
@@ -119,6 +127,10 @@ fn workspace_root() -> PathBuf {
 
 fn project_data_path(file_name: &str) -> PathBuf {
     workspace_root().join("data").join(file_name)
+}
+
+fn reports_dir() -> PathBuf {
+    workspace_root().join("reports")
 }
 
 fn open_db(db_path: Option<String>) -> Result<Connection, String> {
@@ -308,9 +320,10 @@ fn search_stocks(db_path: Option<String>, query: String, limit: Option<i64>) -> 
 fn import_ths_stock_names(path: Option<String>) -> Result<StockSourceStatus, String> {
     let stock_path = path.map(PathBuf::from).unwrap_or_else(default_ths_stockname_path);
     let command = format!("pnpm --filter @chan-shuo/agent import:ths-stockname {}", stock_path.to_string_lossy());
+    let stock_path_arg = stock_path.to_string_lossy().to_string();
     let output = Command::new("pnpm")
         .current_dir(workspace_root())
-        .args(["--filter", "@chan-shuo/agent", "import:ths-stockname", stock_path.to_string_lossy().as_ref()])
+        .args(["--filter", "@chan-shuo/agent", "import:ths-stockname", stock_path_arg.as_str()])
         .output()
         .map_err(|err| err.to_string())?;
     append_task_log(TaskLogEntry {
@@ -327,6 +340,43 @@ fn import_ths_stock_names(path: Option<String>) -> Result<StockSourceStatus, Str
         return Err(format!("{}\n{}", String::from_utf8_lossy(&output.stderr), String::from_utf8_lossy(&output.stdout)));
     }
     load_stock_source_status(None)
+}
+
+#[tauri::command]
+fn list_reports() -> Result<Vec<ReportFileRow>, String> {
+    let dir = reports_dir();
+    fs::create_dir_all(&dir).map_err(|err| err.to_string())?;
+    let mut rows = vec![];
+    for entry in fs::read_dir(&dir).map_err(|err| err.to_string())? {
+        let entry = entry.map_err(|err| err.to_string())?;
+        let path = entry.path();
+        if path.extension().and_then(|value| value.to_str()) != Some("md") { continue; }
+        let meta = entry.metadata().map_err(|err| err.to_string())?;
+        let modified_at = meta.modified().ok().and_then(system_time_secs).unwrap_or_default().to_string();
+        rows.push(ReportFileRow {
+            name: path.file_name().and_then(|value| value.to_str()).unwrap_or("report.md").to_string(),
+            path: path.to_string_lossy().to_string(),
+            size_bytes: meta.len(),
+            modified_at,
+        });
+    }
+    rows.sort_by(|a, b| b.modified_at.cmp(&a.modified_at));
+    Ok(rows.into_iter().take(50).collect())
+}
+
+#[tauri::command]
+fn open_reports_dir() -> Result<String, String> {
+    let dir = reports_dir();
+    fs::create_dir_all(&dir).map_err(|err| err.to_string())?;
+    let dir_arg = dir.to_string_lossy().to_string();
+    #[cfg(target_os = "macos")]
+    let mut command = Command::new("open");
+    #[cfg(target_os = "windows")]
+    let mut command = Command::new("explorer");
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let mut command = Command::new("xdg-open");
+    let status = command.arg(dir_arg.as_str()).status().map_err(|err| err.to_string())?;
+    if status.success() { Ok(dir_arg) } else { Err(format!("open reports dir failed: {}", dir_arg)) }
 }
 
 #[tauri::command]
@@ -384,6 +434,10 @@ fn count_stock_rows(conn: &Connection) -> i64 {
 fn default_ths_stockname_path() -> PathBuf {
     let home = std::env::var("HOME").unwrap_or_default();
     PathBuf::from(home).join("Library/Containers/cn.com.10jqka.macstockPro/Data/Documents/stockname/32_0_base.ini")
+}
+
+fn system_time_secs(value: SystemTime) -> Option<u64> {
+    value.duration_since(UNIX_EPOCH).ok().map(|duration| duration.as_secs())
 }
 
 fn load_persistent_tasks_from_conn(conn: &Connection, limit: i64) -> Result<Vec<PersistentTaskRow>, String> {
@@ -502,6 +556,8 @@ fn main() {
             load_stock_source_status,
             search_stocks,
             import_ths_stock_names,
+            list_reports,
+            open_reports_dir,
             load_task_logs,
             load_model_config,
             save_model_config
