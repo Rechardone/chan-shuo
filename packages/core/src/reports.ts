@@ -1,5 +1,6 @@
 import type { DailyReviewInput } from './index.js';
 import type { AlertItem } from './alerts.js';
+import { evaluateDataQuality } from './data-quality.js';
 
 export interface MarkdownReportInput {
   input: DailyReviewInput;
@@ -11,9 +12,18 @@ export interface MarkdownReportInput {
 export function buildMarkdownReport(report: MarkdownReportInput) {
   const { input, aiReview, nextDayPlan, alerts = [] } = report;
   const mood = input.marketMood;
+  const quality = evaluateDataQuality(input);
   const lines: string[] = [];
 
   lines.push(`# ${input.tradeDate} A股消息派复盘`);
+  lines.push('');
+  lines.push('## 0. 数据质量');
+  lines.push(`- 完整度：${quality.score}/100`);
+  lines.push(`- 状态：${quality.level}`);
+  lines.push(`- 结论：${quality.summary}`);
+  for (const check of quality.checks) {
+    lines.push(`- ${check.ok ? '✅' : '⚠️'} ${check.label}：${check.message}`);
+  }
   lines.push('');
   lines.push('## 1. 市场情绪');
   if (mood) {
