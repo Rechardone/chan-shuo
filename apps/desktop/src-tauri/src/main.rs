@@ -240,6 +240,26 @@ fn load_persistent_tasks(db_path: Option<String>) -> Result<Vec<PersistentTaskRo
 }
 
 #[tauri::command]
+fn cancel_queued_tasks(db_path: Option<String>) -> Result<Vec<PersistentTaskRow>, String> {
+    let conn = open_db(db_path)?;
+    conn.prepare("UPDATE task_queue SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE status IN ('queued', 'running')")
+        .map_err(|err| err.to_string())?
+        .execute([])
+        .map_err(|err| err.to_string())?;
+    load_persistent_tasks_from_conn(&conn, 50)
+}
+
+#[tauri::command]
+fn clear_finished_tasks(db_path: Option<String>) -> Result<Vec<PersistentTaskRow>, String> {
+    let conn = open_db(db_path)?;
+    conn.prepare("DELETE FROM task_queue WHERE status IN ('success', 'failed', 'cancelled')")
+        .map_err(|err| err.to_string())?
+        .execute([])
+        .map_err(|err| err.to_string())?;
+    load_persistent_tasks_from_conn(&conn, 50)
+}
+
+#[tauri::command]
 fn run_next_persistent_task() -> Result<AgentTaskResult, String> {
     let command = "pnpm --filter @chan-shuo/agent queue:run-once".to_string();
     let output = Command::new("pnpm")
@@ -476,6 +496,8 @@ fn main() {
             run_agent_task,
             enqueue_persistent_tasks,
             load_persistent_tasks,
+            cancel_queued_tasks,
+            clear_finished_tasks,
             run_next_persistent_task,
             load_stock_source_status,
             search_stocks,
