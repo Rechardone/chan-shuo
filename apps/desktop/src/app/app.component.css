@@ -80,7 +80,7 @@ button:disabled {
   padding: 18px;
 }
 
-.mood-card span, .panel-title span, .news-row span, .mood-card small, .model-card span, .model-card small, .analysis-card span, .log-card span, .queue-card span, .report-card span, .source-grid span, .source-grid small, .hint-text, .quality-grid small, .quality-head p, .queue-stats span, .workflow-steps span {
+.mood-card span, .panel-title span, .news-row span, .mood-card small, .model-card span, .model-card small, .analysis-card span, .log-card span, .queue-card span, .report-card span, .report-preview span, .source-grid span, .source-grid small, .hint-text, .quality-grid small, .quality-head p, .queue-stats span, .workflow-steps span {
   color: #718099;
 }
 
@@ -320,12 +320,33 @@ th {
   font-size: 22px;
 }
 
-.report-card {
-  padding: 14px 0;
-  border-bottom: 1px solid #edf1f6;
+.report-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(360px, 1.4fr);
+  gap: 16px;
+  margin-top: 16px;
 }
 
-.report-card header {
+.report-list {
+  max-height: 520px;
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.report-card {
+  padding: 14px;
+  border: 1px solid transparent;
+  border-bottom-color: #edf1f6;
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.report-card:hover, .report-card.selected {
+  border-color: #cfe0f5;
+  background: #f7faff;
+}
+
+.report-card header, .report-preview header {
   display: flex;
   justify-content: space-between;
   gap: 16px;
@@ -336,6 +357,27 @@ th {
   margin-top: 8px;
   color: #536176;
   word-break: break-all;
+}
+
+.report-preview {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #e4e9f2;
+  border-radius: 16px;
+  background: #f7f9fc;
+}
+
+.report-preview pre {
+  margin: 12px 0 0;
+  max-height: 520px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.65;
+  padding: 16px;
+  border-radius: 12px;
+  background: #14213d;
+  color: #f7fbff;
 }
 
 .task-panel pre {
@@ -423,4 +465,15 @@ th {
   display: block;
   margin-top: 8px;
   color: #536176;
+}
+
+@media (max-width: 980px) {
+  .mood-grid, .quality-grid, .source-grid, .dashboard-grid, .model-grid, .env-preview, .report-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero, .panel-title, .analysis-card header, .log-card header, .queue-card header, .report-card header, .report-preview header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
