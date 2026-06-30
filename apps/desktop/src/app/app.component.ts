@@ -10,7 +10,7 @@ import { AgentTask, AgentTaskResult, AgentTaskService } from './agent-task.servi
 import { TaskLogService } from './task-log.service';
 import { TaskLogView } from './task-log.data';
 import { TaskQueueService } from './task-queue.service';
-import { TaskQueueItemView } from './task-queue.data';
+import { QueueItemStatus, TaskQueueItemView } from './task-queue.data';
 import { DEFAULT_STOCK_SOURCE_STATUS, StockBasicView, StockSourceService, StockSourceStatus } from './stock-source.service';
 
 @Component({
@@ -117,6 +117,18 @@ export class AppComponent {
     });
   }
 
+  cancelQueuedTasks() {
+    this.taskQueueService.cancelQueued().subscribe(() => {
+      this.taskMessage = '已取消等待/执行中的队列任务';
+    });
+  }
+
+  clearFinishedTasks() {
+    this.taskQueueService.clearFinished().subscribe(() => {
+      this.taskMessage = '已清理成功/失败/已取消的历史任务';
+    });
+  }
+
   refreshDashboard() {
     this.dashboardService.loadDashboard(this.tradeDate).subscribe((vm) => this.applyViewModel(vm));
   }
@@ -167,6 +179,10 @@ export class AppComponent {
     this.stockQuery = '';
     this.stockRows = [];
     this.stockSearchTouched = false;
+  }
+
+  queueCount(status: QueueItemStatus) {
+    return this.queueItems.filter((item) => item.status === status).length;
   }
 
   qualityLabel(level: DataQualityView['level']) {
