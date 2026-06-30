@@ -5,9 +5,9 @@
   "private": true,
   "scripts": {
     "web:dev": "ng serve --host 127.0.0.1 --port 4200",
-    "dev": "tauri dev",
+    "dev": "node scripts/ensure-tauri-icons.mjs && tauri dev",
     "build": "ng build",
-    "tauri:build": "tauri build",
+    "tauri:build": "node scripts/ensure-tauri-icons.mjs && tauri build",
     "typecheck": "ng build"
   },
   "dependencies": {
