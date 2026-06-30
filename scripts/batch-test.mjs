@@ -13,6 +13,18 @@ const cases = [
     expect: ['database initialized']
   },
   {
+    batch: 'Batch 2',
+    name: 'Stock table schema exists',
+    command: ['sqlite3', ['data/market-core.db', '.schema stock']],
+    expect: ['CREATE TABLE', 'stock']
+  },
+  {
+    batch: 'Batch 2',
+    name: 'Stock table count is readable',
+    command: ['sqlite3', ['data/market-core.db', 'select count(*) from stock;']],
+    expectRegex: ['^[0-9]+']
+  },
+  {
     batch: 'Batch 3',
     name: 'Mock market data import',
     command: ['pnpm', ['agent:mock', tradeDate]],
@@ -34,13 +46,19 @@ const cases = [
     batch: 'Batch 4',
     name: 'AI daily review with configured provider',
     command: ['pnpm', ['ai:review', tradeDate]],
-    expect: []
+    expect: ['复盘']
   },
   {
     batch: 'Batch 4',
     name: 'Markdown report export',
     command: ['pnpm', ['report:md', tradeDate, `reports/batch-review-${tradeDate}.md`]],
     expect: ['markdown report exported']
+  },
+  {
+    batch: 'Batch 4',
+    name: 'Markdown report contains data quality section',
+    command: ['grep', ['-n', '## 0. 数据质量', `reports/batch-review-${tradeDate}.md`]],
+    expect: ['数据质量']
   },
   {
     batch: 'Batch 5',
@@ -70,8 +88,9 @@ for (const testCase of cases) {
   const stdout = output.stdout ?? '';
   const stderr = output.stderr ?? '';
   const combined = `${stdout}\n${stderr}`;
-  const expectsPassed = testCase.expect.every((item) => combined.includes(item));
-  const ok = output.status === 0 && expectsPassed;
+  const expectsPassed = (testCase.expect ?? []).every((item) => combined.includes(item));
+  const regexPassed = (testCase.expectRegex ?? []).every((pattern) => new RegExp(pattern, 'm').test(combined));
+  const ok = output.status === 0 && expectsPassed && regexPassed;
   results.push({
     ...testCase,
     ok,
@@ -79,7 +98,10 @@ for (const testCase of cases) {
     durationMs: Date.now() - start,
     stdout,
     stderr,
-    missing: testCase.expect.filter((item) => !combined.includes(item))
+    missing: [
+      ...(testCase.expect ?? []).filter((item) => !combined.includes(item)),
+      ...(testCase.expectRegex ?? []).filter((pattern) => !new RegExp(pattern, 'm').test(combined)).map((pattern) => `regex:${pattern}`)
+    ]
   });
 }
 
