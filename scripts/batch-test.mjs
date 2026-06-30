@@ -1,8 +1,12 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import { resolve } from 'node:path';
 
 const tradeDate = process.argv[2] ?? '2026-06-28';
-const reportPath = process.argv[3] ?? `reports/batch-test-${tradeDate}.md`;
+const runId = new Date().toISOString().replace(/[:.]/g, '-');
+const defaultReportPath = `reports/batch-test-${tradeDate}-${runId}.md`;
+const reportPath = process.argv[3] ?? defaultReportPath;
+const reviewReportPath = `reports/batch-review-${tradeDate}-${runId}.md`;
 const startedAt = new Date().toISOString();
 
 const cases = [
@@ -51,14 +55,18 @@ const cases = [
   {
     batch: 'Batch 4',
     name: 'Markdown report export',
-    command: ['pnpm', ['report:md', tradeDate, `reports/batch-review-${tradeDate}.md`]],
+    command: ['pnpm', ['report:md', tradeDate, reviewReportPath]],
     expect: ['markdown report exported']
   },
   {
     batch: 'Batch 4',
+    name: 'Markdown report file exists',
+    fileExists: reviewReportPath
+  },
+  {
+    batch: 'Batch 4',
     name: 'Markdown report contains data quality section',
-    command: ['grep', ['-n', '## 0. 数据质量', `reports/batch-review-${tradeDate}.md`]],
-    expect: ['数据质量']
+    fileContains: { path: reviewReportPath, text: '## 0. 数据质量' }
   },
   {
     batch: 'Batch 5',
@@ -82,8 +90,22 @@ const cases = [
 
 const results = [];
 for (const testCase of cases) {
-  const [cmd, args] = testCase.command;
   const start = Date.now();
+  if (testCase.fileExists) {
+    const ok = existsSync(resolve(testCase.fileExists));
+    results.push({ ...testCase, ok, status: ok ? 0 : 1, durationMs: Date.now() - start, stdout: ok ? `file exists: ${testCase.fileExists}` : '', stderr: ok ? '' : `missing file: ${testCase.fileExists}`, missing: ok ? [] : [testCase.fileExists] });
+    continue;
+  }
+  if (testCase.fileContains) {
+    const filePath = resolve(testCase.fileContains.path);
+    const exists = existsSync(filePath);
+    const content = exists ? readFileSync(filePath, 'utf8') : '';
+    const ok = exists && content.includes(testCase.fileContains.text);
+    results.push({ ...testCase, ok, status: ok ? 0 : 1, durationMs: Date.now() - start, stdout: ok ? `found text in file: ${testCase.fileContains.path}` : content, stderr: exists ? '' : `missing file: ${testCase.fileContains.path}`, missing: ok ? [] : [exists ? testCase.fileContains.text : testCase.fileContains.path] });
+    continue;
+  }
+
+  const [cmd, args] = testCase.command;
   const output = spawnSync(cmd, args, { encoding: 'utf8', env: { ...process.env, NG_CLI_ANALYTICS: 'false' } });
   const stdout = output.stdout ?? '';
   const stderr = output.stderr ?? '';
@@ -111,6 +133,9 @@ const lines = [];
 lines.push(`# Chan Shuo Batch Test Report`);
 lines.push('');
 lines.push(`- Trade date: ${tradeDate}`);
+lines.push(`- Run id: ${runId}`);
+lines.push(`- Batch report: ${reportPath}`);
+lines.push(`- Review report: ${reviewReportPath}`);
 lines.push(`- Started at: ${startedAt}`);
 lines.push(`- Finished at: ${new Date().toISOString()}`);
 lines.push(`- Passed: ${passed}`);
@@ -129,7 +154,7 @@ for (const item of results) {
   lines.push('');
   lines.push(`### ${item.ok ? 'PASS' : 'FAIL'} · ${item.batch} · ${item.name}`);
   lines.push('');
-  lines.push(`Command: \`${item.command[0]} ${item.command[1].join(' ')}\``);
+  lines.push(`Command: ${formatCommand(item)}`);
   lines.push(`Exit status: ${item.status}`);
   if (item.missing.length) lines.push(`Missing expected output: ${item.missing.join(', ')}`);
   lines.push('');
@@ -143,8 +168,16 @@ lines.push('> This report is generated locally and should not be committed when 
 mkdirSync(reportPath.split('/').slice(0, -1).join('/') || '.', { recursive: true });
 writeFileSync(reportPath, lines.join('\n'), 'utf8');
 console.log(`batch test report: ${reportPath}`);
+console.log(`review report: ${reviewReportPath}`);
 console.log(`passed=${passed} failed=${failed}`);
 process.exit(failed === 0 ? 0 : 1);
+
+function formatCommand(item) {
+  if (item.command) return `\`${item.command[0]} ${item.command[1].join(' ')}\``;
+  if (item.fileExists) return `file exists: \`${item.fileExists}\``;
+  if (item.fileContains) return `file contains: \`${item.fileContains.path}\``;
+  return '`internal check`';
+}
 
 function truncate(value, limit) {
   if (value.length <= limit) return value;
