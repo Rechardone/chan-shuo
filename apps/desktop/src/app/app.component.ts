@@ -48,6 +48,7 @@ export class AppComponent {
   configMessage = 'idle';
   taskRunning = false;
   taskMessage = 'idle';
+  workflowSteps: string[] = [];
   lastTaskResult?: AgentTaskResult;
 
   settings: ModelSettingsViewModel = MODEL_SETTINGS;
@@ -95,6 +96,12 @@ export class AppComponent {
       this.refreshTaskLogs();
       this.refreshQueue();
     });
+  }
+
+  runDailyWorkflow() {
+    if (this.taskRunning) return;
+    this.workflowSteps = [];
+    this.runWorkflowStep(['review', 'plan', 'alerts', 'report'], 0);
   }
 
   enqueueDailyWorkflow() {
@@ -204,6 +211,34 @@ export class AppComponent {
       medium: 'medium cost',
       high: 'high cost'
     }[level];
+  }
+
+  private runWorkflowStep(tasks: AgentTask[], index: number) {
+    if (index >= tasks.length) {
+      this.taskRunning = false;
+      this.taskMessage = '一键复盘完成：AI复盘、明日计划、风险提醒、Markdown报告已执行';
+      this.refreshDashboard();
+      this.refreshAnalyses();
+      this.refreshTaskLogs();
+      this.refreshQueue();
+      return;
+    }
+
+    const task = tasks[index];
+    this.taskRunning = true;
+    this.taskMessage = `一键复盘执行中：${index + 1}/${tasks.length} · ${task}`;
+    this.workflowSteps = [...this.workflowSteps, `开始：${task}`];
+    this.agentTaskService.runTask(task, this.tradeDate).subscribe((result) => {
+      this.lastTaskResult = result;
+      this.workflowSteps = [...this.workflowSteps, `${result.ok ? '完成' : '失败'}：${task}`];
+      if (!result.ok) {
+        this.taskRunning = false;
+        this.taskMessage = `一键复盘中断：${task} 执行失败`;
+        this.refreshTaskLogs();
+        return;
+      }
+      this.runWorkflowStep(tasks, index + 1);
+    });
   }
 
   private applyViewModel(vm: DashboardViewModel) {
