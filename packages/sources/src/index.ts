@@ -1,5 +1,6 @@
 import type { BrokenLimitItem, LimitUpItem, MarketMood, MarketSource, NewsItem, ThemeRankItem, TradeDate } from '@chan-shuo/core';
 export * from './importers.js';
+export * from './ths-mac.js';
 
 export class MockSource implements MarketSource {
   name = 'mock';
