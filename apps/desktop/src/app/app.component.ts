@@ -44,6 +44,7 @@ export class AppComponent {
   stockImporting = false;
   stockQuery = '';
   stockRows: StockBasicView[] = [];
+  stockSearchTouched = false;
   configMessage = 'idle';
   taskRunning = false;
   taskMessage = 'idle';
@@ -58,7 +59,6 @@ export class AppComponent {
     this.refreshTaskLogs();
     this.refreshQueue();
     this.refreshStockSourceStatus();
-    this.searchStocks();
     this.taskQueueService.items$.subscribe((items) => this.queueItems = items);
     this.modelConfigService.loadConfig().subscribe((config) => {
       this.configMessage = `loaded: ${config.provider} / ${config.model}`;
@@ -143,7 +143,7 @@ export class AppComponent {
     this.stockSourceService.importThsStockNames().subscribe((status) => {
       this.stockImporting = false;
       this.stockSourceStatus = status;
-      this.searchStocks();
+      this.clearStockSearch();
       this.refreshTaskLogs();
     });
   }
@@ -154,7 +154,19 @@ export class AppComponent {
   }
 
   searchStocks() {
-    this.stockSourceService.searchStocks(this.stockQuery, 80).subscribe((rows) => this.stockRows = rows);
+    const query = this.stockQuery.trim();
+    this.stockSearchTouched = true;
+    if (!query) {
+      this.stockRows = [];
+      return;
+    }
+    this.stockSourceService.searchStocks(query, 50).subscribe((rows) => this.stockRows = rows);
+  }
+
+  clearStockSearch() {
+    this.stockQuery = '';
+    this.stockRows = [];
+    this.stockSearchTouched = false;
   }
 
   qualityLabel(level: DataQualityView['level']) {
