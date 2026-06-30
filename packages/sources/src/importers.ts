@@ -20,53 +20,58 @@ export function loadCsvPayload(filePath: string, tradeDate: TradeDate): ImportPa
   const news: NewsItem[] = [];
 
   for (const row of rows) {
-    const type = (row.type || row.kind || 'limit_up').trim();
+    const type = cell(row.type, row.kind, 'limit_up');
     if (type === 'theme') {
-      const name = row.themeName || row.theme || row.name;
+      const name = cell(row.themeName, row.theme_name, row.theme, row.name);
       if (!name) continue;
       themes.set(name, {
         tradeDate,
         themeName: name,
-        limitUpCount: requiredNumberValue(row.limitUpCount || row.limit_up_count, 0),
-        boardCount: numberValue(row.boardCount || row.board_count, 0),
-        leaderCode: row.leaderCode || row.leader_code,
-        leaderName: row.leaderName || row.leader_name,
-        rankNo: numberValue(row.rankNo || row.rank_no, themes.size + 1),
-        heatScore: numberValue(row.heatScore || row.heat_score, undefined),
-        source: 'csv',
+        limitUpCount: requiredNumberValue(cell(row.limitUpCount, row.limit_up_count, row.limitUps, row.limit_ups, row.reason), 0),
+        boardCount: numberValue(cell(row.boardCount, row.board_count, row.board, row.height), 0),
+        leaderCode: cell(row.leaderCode, row.leader_code, row.leader),
+        leaderName: cell(row.leaderName, row.leader_name),
+        rankNo: numberValue(cell(row.rankNo, row.rank_no), themes.size + 1),
+        heatScore: numberValue(cell(row.heatScore, row.heat_score, row.score), undefined),
+        source: cell(row.source, 'csv'),
         raw: row
       });
       continue;
     }
 
     if (type === 'news') {
+      const rawNewsTime = cell(row.newsTime, row.news_time, row.time, row.firstLimitTime, row.first_limit_time);
       news.push({
-        newsTime: row.newsTime || row.news_time || `${tradeDate} ${row.time || '09:30:00'}`,
-        source: row.source || 'csv',
-        title: row.title || row.name || '',
-        content: row.content,
-        relatedCodes: splitList(row.relatedCodes || row.related_codes || row.code),
-        relatedThemes: splitList(row.relatedThemes || row.related_themes || row.theme),
-        eventType: row.eventType || row.event_type,
-        importanceScore: numberValue(row.importanceScore || row.importance_score, undefined),
+        newsTime: normalizeNewsTime(rawNewsTime, tradeDate),
+        source: cell(row.source, 'csv'),
+        title: cell(row.title, row.name),
+        content: cell(row.content, row.reason),
+        relatedCodes: splitList(cell(row.relatedCodes, row.related_codes, row.code)),
+        relatedThemes: splitList(cell(row.relatedThemes, row.related_themes, row.themes, row.theme)),
+        eventType: cell(row.eventType, row.event_type, row.type2),
+        importanceScore: numberValue(cell(row.importanceScore, row.importance_score, row.score), undefined),
         raw: row
       });
       continue;
     }
 
+    const code = cell(row.code);
+    const name = cell(row.name);
+    if (!code || !name) continue;
+
     limitUps.push({
       tradeDate,
-      code: row.code,
-      name: row.name,
-      firstLimitTime: row.firstLimitTime || row.first_limit_time,
-      lastLimitTime: row.lastLimitTime || row.last_limit_time,
-      breakCount: numberValue(row.breakCount || row.break_count, 0),
-      boardCount: numberValue(row.boardCount || row.board_count, 1),
-      reason: row.reason,
-      themes: splitList(row.themes || row.theme),
-      amount: numberValue(row.amount, undefined),
-      floatMarketCap: numberValue(row.floatMarketCap || row.float_market_cap, undefined),
-      source: row.source || 'csv',
+      code,
+      name,
+      firstLimitTime: cell(row.firstLimitTime, row.first_limit_time, row.time),
+      lastLimitTime: cell(row.lastLimitTime, row.last_limit_time),
+      breakCount: numberValue(cell(row.breakCount, row.break_count), 0),
+      boardCount: numberValue(cell(row.boardCount, row.board_count, row.board, row.height), 1),
+      reason: cell(row.reason),
+      themes: splitList(cell(row.themes, row.theme)),
+      amount: numberValue(cell(row.amount), undefined),
+      floatMarketCap: numberValue(cell(row.floatMarketCap, row.float_market_cap), undefined),
+      source: cell(row.source, 'csv'),
       raw: row
     });
   }
@@ -75,7 +80,7 @@ export function loadCsvPayload(filePath: string, tradeDate: TradeDate): ImportPa
     tradeDate,
     limitUpCount: limitUps.length,
     limitDownCount: 0,
-    brokenLimitCount: 0,
+    brokenLimitCount: limitUps.reduce((sum, row) => sum + (row.breakCount && row.breakCount > 0 ? 1 : 0), 0),
     maxBoardHeight: limitUps.reduce((max, row) => Math.max(max, row.boardCount ?? 1), 0),
     source: 'csv'
   };
@@ -125,6 +130,22 @@ function splitCsvLine(line: string) {
   }
   out.push(cur.trim());
   return out;
+}
+
+function cell(...values: Array<unknown>): string {
+  for (const value of values) {
+    if (value === undefined || value === null) continue;
+    const text = String(value).trim();
+    if (text) return text;
+  }
+  return '';
+}
+
+function normalizeNewsTime(value: string, tradeDate: TradeDate): string {
+  if (!value) return `${tradeDate} 09:30:00`;
+  if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value;
+  if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(value)) return `${tradeDate} ${value.length === 5 ? `${value}:00` : value}`;
+  return `${tradeDate} ${value}`;
 }
 
 function splitList(value?: string) {
