@@ -173,6 +173,26 @@
     <pre *ngIf="lastTaskResult">{{ lastTaskResult.stdout || lastTaskResult.stderr }}</pre>
   </section>
 
+  <section class="panel report-panel">
+    <div class="panel-title">
+      <h2>报告中心</h2>
+      <span>{{ reportsMessage }}</span>
+    </div>
+    <div class="actions">
+      <button (click)="refreshReports()">刷新报告列表</button>
+      <button (click)="openReportsDir()">打开 reports 目录</button>
+      <button (click)="runTask('report')" [disabled]="taskRunning">重新生成今日报告</button>
+    </div>
+    <div class="analysis-empty" *ngIf="reports.length === 0">暂无 Markdown 报告。点击“一键复盘”或“重新生成今日报告”后会出现在这里。</div>
+    <article class="report-card" *ngFor="let report of reports">
+      <header>
+        <strong>{{ report.name }}</strong>
+        <span>{{ formatReportSize(report.size_bytes) }} · {{ formatReportModified(report.modified_at) }}</span>
+      </header>
+      <code>{{ report.path }}</code>
+    </article>
+  </section>
+
   <section class="panel queue-panel">
     <div class="panel-title">
       <h2>SQLite 持久任务队列</h2>
