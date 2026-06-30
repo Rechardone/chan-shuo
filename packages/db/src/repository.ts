@@ -8,6 +8,16 @@ export interface StockBasicInput {
   industry?: string;
 }
 
+export interface StockBasicRow extends StockBasicInput {
+  updatedAt?: string;
+}
+
+export interface StockSearchOptions {
+  query?: string;
+  market?: string;
+  limit?: number;
+}
+
 const encode = (value: unknown) => JSON.stringify(value ?? null);
 const decodeList = (value: unknown): string[] => {
   if (typeof value !== 'string') return [];
@@ -31,6 +41,35 @@ export function saveStocks(db: Database.Database, items: StockBasicInput[]) {
 export function countStocks(db: Database.Database): number {
   const row = db.prepare('SELECT COUNT(*) AS count FROM stock').get() as { count?: number } | undefined;
   return Number(row?.count ?? 0);
+}
+
+export function getStockByCode(db: Database.Database, code: string): StockBasicRow | undefined {
+  const row = db.prepare('SELECT code, name, market, industry, updated_at FROM stock WHERE code = ? LIMIT 1').get(code.trim()) as any | undefined;
+  return row ? toStockRow(row) : undefined;
+}
+
+export function listStocks(db: Database.Database, options: Omit<StockSearchOptions, 'query'> = {}): StockBasicRow[] {
+  const limit = normalizeLimit(options.limit, 100);
+  const market = options.market?.trim();
+  const sql = market
+    ? 'SELECT code, name, market, industry, updated_at FROM stock WHERE market = ? ORDER BY market, code LIMIT ?'
+    : 'SELECT code, name, market, industry, updated_at FROM stock ORDER BY market, code LIMIT ?';
+  const rows = market ? db.prepare(sql).all(market, limit) : db.prepare(sql).all(limit);
+  return (rows as any[]).map(toStockRow);
+}
+
+export function searchStocks(db: Database.Database, options: StockSearchOptions): StockBasicRow[] {
+  const query = options.query?.trim() ?? '';
+  if (!query) return listStocks(db, { market: options.market, limit: options.limit });
+
+  const limit = normalizeLimit(options.limit, 50);
+  const like = `%${query}%`;
+  const prefix = `${query}%`;
+  const market = options.market?.trim();
+  const where = market ? '(code LIKE ? OR name LIKE ?) AND market = ?' : 'code LIKE ? OR name LIKE ?';
+  const sql = `SELECT code, name, market, industry, updated_at FROM stock WHERE ${where} ORDER BY CASE WHEN code = ? THEN 0 WHEN code LIKE ? THEN 1 WHEN name = ? THEN 2 ELSE 3 END, market, code LIMIT ?`;
+  const params = market ? [like, like, market, query, prefix, query, limit] : [like, like, query, prefix, query, limit];
+  return (db.prepare(sql).all(...params) as any[]).map(toStockRow);
 }
 
 export function saveMarketMood(db: Database.Database, item: MarketMood) {
@@ -110,6 +149,21 @@ export function loadDailyReviewInput(db: Database.Database, tradeDate: string): 
     topThemes: themeRows.map((r) => ({ tradeDate: r.trade_date, themeName: r.theme_name, limitUpCount: r.limit_up_count, boardCount: r.board_count, leaderCode: r.leader_code, leaderName: r.leader_name, rankNo: r.rank_no, heatScore: r.heat_score, source: r.source })),
     limitUps: limitRows.map((r) => ({ tradeDate: r.trade_date, code: r.code, name: r.name, firstLimitTime: r.first_limit_time, lastLimitTime: r.last_limit_time, breakCount: r.break_count, boardCount: r.board_count, reason: r.reason, themes: decodeList(r.themes), amount: r.amount, floatMarketCap: r.float_market_cap, source: r.source })),
     news: newsRows.map((r) => ({ newsTime: r.news_time, source: r.source, title: r.title, content: r.content, relatedCodes: decodeList(r.related_codes), relatedThemes: decodeList(r.related_themes), eventType: r.event_type, importanceScore: r.importance_score, aiSummary: r.ai_summary }))
+  };
+}
+
+function normalizeLimit(value: number | undefined, fallback: number) {
+  if (value === undefined || !Number.isFinite(value)) return fallback;
+  return Math.max(1, Math.min(500, Math.floor(value)));
+}
+
+function toStockRow(row: any): StockBasicRow {
+  return {
+    code: row.code,
+    name: row.name,
+    market: row.market,
+    industry: row.industry,
+    updatedAt: row.updated_at
   };
 }
 
