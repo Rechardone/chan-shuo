@@ -71,14 +71,17 @@
   <section class="panel stock-panel">
     <div class="panel-title">
       <h2>股票基础库</h2>
-      <span>支持代码 / 名称搜索</span>
+      <span>输入后才显示结果，避免占用页面空间</span>
     </div>
     <div class="stock-search-row">
       <input [value]="stockQuery" (input)="updateStockQuery($event)" placeholder="输入 000001 / 平安 / 300750 / 宁德时代" />
       <button (click)="searchStocks()">搜索</button>
+      <button *ngIf="stockQuery || stockRows.length > 0" (click)="clearStockSearch()">清空</button>
     </div>
-    <div class="analysis-empty" *ngIf="stockRows.length === 0">暂无股票数据。请先导入同花顺股票基础库。</div>
-    <table *ngIf="stockRows.length > 0">
+    <div class="analysis-empty" *ngIf="!stockSearchTouched">请输入代码或名称搜索股票，不默认展开全部股票。</div>
+    <div class="analysis-empty" *ngIf="stockSearchTouched && stockQuery.trim() && stockRows.length === 0">没有匹配结果。</div>
+    <div class="analysis-empty" *ngIf="stockSearchTouched && !stockQuery.trim()">请输入关键词后再搜索。</div>
+    <table *ngIf="stockQuery.trim() && stockRows.length > 0">
       <thead>
         <tr><th>代码</th><th>名称</th><th>市场</th><th>行业</th><th>更新时间</th></tr>
       </thead>
