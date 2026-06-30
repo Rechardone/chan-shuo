@@ -80,7 +80,7 @@ const cases = [
   {
     batch: 'Report Center',
     name: 'Generated report is available for preview',
-    fileContains: { path: reviewReportAbsPath, text: '# Chan Shuo' }
+    fileContains: { path: reviewReportAbsPath, text: 'A股消息派复盘' }
   },
   {
     batch: 'Report Center',
