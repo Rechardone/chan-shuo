@@ -51,9 +51,16 @@ export function saveThemeRanks(db: Database.Database, items: ThemeRankItem[]) {
 }
 
 export function saveNews(db: Database.Database, items: NewsItem[]) {
-  const sql = 'INSERT INTO news_flash (news_time, source, title, content, related_codes, related_themes, event_type, importance_score, ai_summary, raw_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(news_time, source, title) DO UPDATE SET content = excluded.content, related_codes = excluded.related_codes, related_themes = excluded.related_themes, event_type = excluded.event_type, importance_score = excluded.importance_score, ai_summary = excluded.ai_summary, raw_json = excluded.raw_json';
-  const stmt = db.prepare(sql);
-  for (const item of items) stmt.run(item.newsTime, item.source, item.title, item.content, encode(item.relatedCodes ?? []), encode(item.relatedThemes ?? []), item.eventType, item.importanceScore, item.aiSummary, encode(item.raw ?? item));
+  const insertSql = 'INSERT INTO news_flash (news_time, source, title, content, related_codes, related_themes, event_type, importance_score, ai_summary, raw_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  const deleteStmt = db.prepare('DELETE FROM news_flash WHERE news_time = ? AND source = ? AND title = ?');
+  const insertStmt = db.prepare(insertSql);
+  const tx = db.transaction((rows: NewsItem[]) => {
+    for (const item of rows) {
+      deleteStmt.run(item.newsTime, item.source, item.title);
+      insertStmt.run(item.newsTime, item.source, item.title, item.content, encode(item.relatedCodes ?? []), encode(item.relatedThemes ?? []), item.eventType, item.importanceScore, item.aiSummary, encode(item.raw ?? item));
+    }
+  });
+  tx(items);
 }
 
 export function saveAiAnalysis(db: Database.Database, item: AiAnalysis) {
