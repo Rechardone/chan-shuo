@@ -1,6 +1,13 @@
 import type Database from 'better-sqlite3';
 import type { AiAnalysis, DailyReviewInput, EnqueueTaskInput, LimitUpItem, MarketMood, NewsItem, PersistentTaskQueueItem, ThemeRankItem } from '@chan-shuo/core';
 
+export interface StockBasicInput {
+  code: string;
+  name: string;
+  market?: string;
+  industry?: string;
+}
+
 const encode = (value: unknown) => JSON.stringify(value ?? null);
 const decodeList = (value: unknown): string[] => {
   if (typeof value !== 'string') return [];
@@ -11,6 +18,20 @@ const decodeList = (value: unknown): string[] => {
     return [];
   }
 };
+
+export function saveStocks(db: Database.Database, items: StockBasicInput[]) {
+  const sql = 'INSERT INTO stock (code, name, market, industry, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP) ON CONFLICT(code) DO UPDATE SET name = excluded.name, market = excluded.market, industry = COALESCE(excluded.industry, stock.industry), updated_at = CURRENT_TIMESTAMP';
+  const stmt = db.prepare(sql);
+  const tx = db.transaction((rows: StockBasicInput[]) => {
+    for (const item of rows) stmt.run(item.code, item.name, item.market, item.industry);
+  });
+  tx(items);
+}
+
+export function countStocks(db: Database.Database): number {
+  const row = db.prepare('SELECT COUNT(*) AS count FROM stock').get() as { count?: number } | undefined;
+  return Number(row?.count ?? 0);
+}
 
 export function saveMarketMood(db: Database.Database, item: MarketMood) {
   const sql = 'INSERT OR REPLACE INTO market_mood (trade_date, limit_up_count, limit_down_count, broken_limit_count, max_board_height, seal_rate, promotion_rate_1_to_2, promotion_rate_2_to_3, yesterday_limit_avg_return, mood_score, source, raw_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
