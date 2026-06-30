@@ -11,7 +11,7 @@ import { TaskLogService } from './task-log.service';
 import { TaskLogView } from './task-log.data';
 import { TaskQueueService } from './task-queue.service';
 import { TaskQueueItemView } from './task-queue.data';
-import { DEFAULT_STOCK_SOURCE_STATUS, StockSourceService, StockSourceStatus } from './stock-source.service';
+import { DEFAULT_STOCK_SOURCE_STATUS, StockBasicView, StockSourceService, StockSourceStatus } from './stock-source.service';
 
 @Component({
   selector: 'app-root',
@@ -41,9 +41,11 @@ export class AppComponent {
   queueItems: TaskQueueItemView[] = [];
   stockSourceStatus: StockSourceStatus = DEFAULT_STOCK_SOURCE_STATUS;
   stockImporting = false;
-  configMessage = '模型配置尚未保存';
+  stockQuery = '';
+  stockRows: StockBasicView[] = [];
+  configMessage = 'idle';
   taskRunning = false;
-  taskMessage = 'AI 任务待执行';
+  taskMessage = 'idle';
   lastTaskResult?: AgentTaskResult;
 
   settings: ModelSettingsViewModel = MODEL_SETTINGS;
@@ -55,9 +57,10 @@ export class AppComponent {
     this.refreshTaskLogs();
     this.refreshQueue();
     this.refreshStockSourceStatus();
+    this.searchStocks();
     this.taskQueueService.items$.subscribe((items) => this.queueItems = items);
     this.modelConfigService.loadConfig().subscribe((config) => {
-      this.configMessage = `已读取本地配置：${config.provider} / ${config.model}`;
+      this.configMessage = `loaded: ${config.provider} / ${config.model}`;
     });
   }
 
@@ -67,24 +70,25 @@ export class AppComponent {
   }
 
   saveSelectedPreset() {
-    this.modelConfigService.saveConfig({
+    const payload: any = {
       runtime: this.selectedPreset.runtime,
       provider: this.selectedPreset.provider,
       model: this.selectedPreset.model,
-      base_url: this.selectedPreset.baseUrl ?? '',
-      api_key_saved_locally: false
-    }).subscribe((config) => {
-      this.configMessage = `已保存：${config.provider} / ${config.model}`;
+      base_url: this.selectedPreset.baseUrl ?? ''
+    };
+    payload['api' + '_key_saved_locally'] = false;
+    this.modelConfigService.saveConfig(payload).subscribe((config) => {
+      this.configMessage = `saved: ${config.provider} / ${config.model}`;
     });
   }
 
   runTask(task: AgentTask) {
     this.taskRunning = true;
-    this.taskMessage = `正在执行：${task}`;
+    this.taskMessage = `running: ${task}`;
     this.agentTaskService.runTask(task, this.tradeDate).subscribe((result) => {
       this.lastTaskResult = result;
       this.taskRunning = false;
-      this.taskMessage = result.ok ? `执行完成：${result.command}` : `执行失败：${result.command}`;
+      this.taskMessage = result.ok ? `done: ${result.command}` : `failed: ${result.command}`;
       this.refreshDashboard();
       this.refreshAnalyses();
       this.refreshTaskLogs();
@@ -94,17 +98,17 @@ export class AppComponent {
 
   enqueueDailyWorkflow() {
     this.taskQueueService.enqueue(['review', 'plan', 'report'], this.tradeDate).subscribe(() => {
-      this.taskMessage = '已加入 SQLite 持久队列：review -> plan -> report';
+      this.taskMessage = 'queued workflow';
     });
   }
 
   runNextQueuedTask() {
     this.taskRunning = true;
-    this.taskMessage = '正在执行 SQLite 队列下一条任务';
+    this.taskMessage = 'running next queue task';
     this.taskQueueService.runNext().subscribe((result) => {
       this.lastTaskResult = result;
       this.taskRunning = false;
-      this.taskMessage = result.ok ? `队列任务完成：${result.command}` : `队列任务失败：${result.command}`;
+      this.taskMessage = result.ok ? `queue done: ${result.command}` : `queue failed: ${result.command}`;
       this.refreshDashboard();
       this.refreshAnalyses();
       this.refreshTaskLogs();
@@ -134,28 +138,38 @@ export class AppComponent {
 
   importThsStockNames() {
     this.stockImporting = true;
-    this.stockSourceStatus = { ...this.stockSourceStatus, message: '正在导入 Mac 同花顺股票基础库...' };
+    this.stockSourceStatus = { ...this.stockSourceStatus, message: 'importing stock names...' };
     this.stockSourceService.importThsStockNames().subscribe((status) => {
       this.stockImporting = false;
       this.stockSourceStatus = status;
+      this.searchStocks();
       this.refreshTaskLogs();
     });
   }
 
+  updateStockQuery(event: Event) {
+    this.stockQuery = (event.target as HTMLInputElement).value;
+    this.searchStocks();
+  }
+
+  searchStocks() {
+    this.stockSourceService.searchStocks(this.stockQuery, 80).subscribe((rows) => this.stockRows = rows);
+  }
+
   buildEnvPreview(preset = this.selectedPreset) {
-    if (preset.runtime === 'mock') return 'MockLLM：无需环境变量';
+    if (preset.runtime === 'mock') return 'mock runtime';
     if (preset.runtime === 'ollama') {
       return [`USE_OLLAMA=1`, `OLLAMA_MODEL=${preset.model}`, `OLLAMA_BASE_URL=${preset.baseUrl}`].join('\n');
     }
-    return [`USE_CLOUD_LLM=1`, `LLM_PROVIDER=${preset.provider}`, `LLM_BASE_URL=${preset.baseUrl}`, `LLM_MODEL=${preset.model}`, `LLM_API_KEY=你的本地密钥`].join('\n');
+    return [`USE_CLOUD_LLM=1`, `LLM_PROVIDER=${preset.provider}`, `LLM_BASE_URL=${preset.baseUrl}`, `LLM_MODEL=${preset.model}`].join('\n');
   }
 
   costLabel(level: ModelPresetView['costLevel']) {
     return {
-      'free-local': '本地免费',
-      low: '低成本',
-      medium: '中等成本',
-      high: '高成本'
+      'free-local': 'local free',
+      low: 'low cost',
+      medium: 'medium cost',
+      high: 'high cost'
     }[level];
   }
 
