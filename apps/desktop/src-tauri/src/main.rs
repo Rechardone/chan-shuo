@@ -64,6 +64,15 @@ struct StockSourceStatus {
     message: String,
 }
 
+#[derive(Serialize)]
+struct StockBasicRow {
+    code: String,
+    name: String,
+    market: String,
+    industry: String,
+    updated_at: String,
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 struct TaskLogEntry {
     id: String,
@@ -264,6 +273,18 @@ fn load_stock_source_status(db_path: Option<String>) -> Result<StockSourceStatus
 }
 
 #[tauri::command]
+fn search_stocks(db_path: Option<String>, query: String, limit: Option<i64>) -> Result<Vec<StockBasicRow>, String> {
+    let conn = open_db(db_path)?;
+    let safe_limit = limit.unwrap_or(50).clamp(1, 200);
+    let keyword = query.trim().to_string();
+    if keyword.is_empty() {
+        load_stock_rows(&conn, safe_limit)
+    } else {
+        search_stock_rows(&conn, &keyword, safe_limit)
+    }
+}
+
+#[tauri::command]
 fn import_ths_stock_names(path: Option<String>) -> Result<StockSourceStatus, String> {
     let stock_path = path.map(PathBuf::from).unwrap_or_else(default_ths_stockname_path);
     let command = format!("pnpm --filter @chan-shuo/agent import:ths-stockname {}", stock_path.to_string_lossy());
@@ -365,6 +386,36 @@ fn load_persistent_tasks_from_conn(conn: &Connection, limit: i64) -> Result<Vec<
     rows.collect::<Result<Vec<_>, _>>().map_err(|err| err.to_string())
 }
 
+fn load_stock_rows(conn: &Connection, limit: i64) -> Result<Vec<StockBasicRow>, String> {
+    let mut stmt = conn
+        .prepare("SELECT code, name, COALESCE(market, ''), COALESCE(industry, ''), COALESCE(updated_at, '') FROM stock ORDER BY market, code LIMIT ?")
+        .map_err(|err| err.to_string())?;
+    let rows = stmt.query_map([limit], stock_row_from_sql).map_err(|err| err.to_string())?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(|err| err.to_string())
+}
+
+fn search_stock_rows(conn: &Connection, keyword: &str, limit: i64) -> Result<Vec<StockBasicRow>, String> {
+    let like = format!("%{}%", keyword);
+    let prefix = format!("{}%", keyword);
+    let mut stmt = conn
+        .prepare("SELECT code, name, COALESCE(market, ''), COALESCE(industry, ''), COALESCE(updated_at, '') FROM stock WHERE code LIKE ? OR name LIKE ? ORDER BY CASE WHEN code = ? THEN 0 WHEN code LIKE ? THEN 1 WHEN name = ? THEN 2 ELSE 3 END, code LIMIT ?")
+        .map_err(|err| err.to_string())?;
+    let rows = stmt
+        .query_map(params![like, like, keyword, prefix, keyword, limit], stock_row_from_sql)
+        .map_err(|err| err.to_string())?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(|err| err.to_string())
+}
+
+fn stock_row_from_sql(row: &rusqlite::Row<'_>) -> rusqlite::Result<StockBasicRow> {
+    Ok(StockBasicRow {
+        code: row.get(0)?,
+        name: row.get(1)?,
+        market: row.get(2)?,
+        industry: row.get(3)?,
+        updated_at: row.get(4)?,
+    })
+}
+
 fn load_themes(conn: &Connection, trade_date: &str) -> Result<Vec<ThemeRow>, String> {
     let mut stmt = conn
         .prepare("SELECT COALESCE(rank_no, 99), theme_name, limit_up_count, COALESCE(leader_name, '待确认'), COALESCE(heat_score, 0) FROM theme_daily_rank WHERE trade_date = ? ORDER BY rank_no ASC, heat_score DESC LIMIT 12")
@@ -427,6 +478,7 @@ fn main() {
             load_persistent_tasks,
             run_next_persistent_task,
             load_stock_source_status,
+            search_stocks,
             import_ths_stock_names,
             load_task_logs,
             load_model_config,
