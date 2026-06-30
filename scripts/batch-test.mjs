@@ -32,6 +32,26 @@ const cases = [
     expectRegex: ['^[0-9]+']
   },
   {
+    batch: 'Batch 2',
+    name: 'DB stock search helper exists',
+    fileContains: { path: resolve(workspaceRoot, 'packages/db/src/repository.ts'), text: 'export function searchStocks' }
+  },
+  {
+    batch: 'Batch 2',
+    name: 'DB stock get helper exists',
+    fileContains: { path: resolve(workspaceRoot, 'packages/db/src/repository.ts'), text: 'export function getStockByCode' }
+  },
+  {
+    batch: 'Batch 2',
+    name: 'Agent stock search command is wired',
+    fileContains: { path: resolve(workspaceRoot, 'apps/agent/src/db-cli.ts'), text: "command === 'stock:search'" }
+  },
+  {
+    batch: 'Batch 2',
+    name: 'Root stock scripts are exposed',
+    fileContains: { path: resolve(workspaceRoot, 'package.json'), text: '"stock:search"' }
+  },
+  {
     batch: 'Batch 3',
     name: 'Mock market data import',
     command: ['pnpm', ['agent:mock', tradeDate]],
