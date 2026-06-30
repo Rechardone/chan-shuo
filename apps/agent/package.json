@@ -7,6 +7,7 @@
     "mock": "tsx src/db-cli.ts mock",
     "import:json": "tsx src/db-cli.ts import:json",
     "import:csv": "tsx src/db-cli.ts import:csv",
+    "import:ths-stockname": "tsx src/db-cli.ts import:ths-stockname",
     "review": "tsx src/db-cli.ts ai:review",
     "plan": "tsx src/db-cli.ts ai:plan",
     "news": "tsx src/db-cli.ts ai:news",
