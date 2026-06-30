@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { buildDailyReviewPrompt, buildNewsClassificationPrompt, buildNextDayPlanPrompt, buildThemeAnalysisPrompt, createProvider, testProvider } from '@chan-shuo/llm';
 import { filterAStockEntries, loadCsvPayload, loadJsonPayload, loadThsMacStockNameIni, MockSource } from '@chan-shuo/sources';
-import { claimNextTask, countStocks, enqueueTask, initDb, listTasks, loadDailyReviewInput, markTaskFailed, markTaskSuccess, openDb, saveAiAnalysis, saveLimitUps, saveMarketMood, saveNews, saveStocks, saveThemeRanks } from '@chan-shuo/db';
+import { claimNextTask, countStocks, enqueueTask, getStockByCode, initDb, listStocks, listTasks, loadDailyReviewInput, markTaskFailed, markTaskSuccess, openDb, saveAiAnalysis, saveLimitUps, saveMarketMood, saveNews, saveStocks, saveThemeRanks, searchStocks } from '@chan-shuo/db';
 import { buildMarkdownReport, evaluateAlerts } from '@chan-shuo/core';
 import type { DailyReviewInput, PersistentTaskType, TradeDate } from '@chan-shuo/core';
 
@@ -13,6 +13,11 @@ function dateArg(defaultDate = '2026-06-28'): TradeDate {
 function requiredArg(value: string | undefined, name: string): string {
   if (!value) throw new Error(`${name} is required`);
   return value;
+}
+
+function numberArg(value: string | undefined, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function persistInput(input: DailyReviewInput) {
@@ -64,6 +69,31 @@ function importThsMacStockName(filePath: string) {
   const total = countStocks(db);
   db.close();
   console.log(JSON.stringify({ source: 'ths-mac-stockname', filePath, configVersion: parsed.configVersion, parsedEntries: parsed.entries.length, importedStocks: stocks.length, totalStocks: total }, null, 2));
+}
+
+function listStockCommand(market?: string, limitValue?: string) {
+  const db = initDb();
+  const rows = listStocks(db, { market, limit: numberArg(limitValue, 50) });
+  db.close();
+  console.log(JSON.stringify({ count: rows.length, rows }, null, 2));
+}
+
+function searchStockCommand(query: string, market?: string, limitValue?: string) {
+  const db = initDb();
+  const rows = searchStocks(db, { query, market, limit: numberArg(limitValue, 50) });
+  db.close();
+  console.log(JSON.stringify({ query, market: market ?? null, count: rows.length, rows }, null, 2));
+}
+
+function getStockCommand(code: string) {
+  const db = initDb();
+  const row = getStockByCode(db, code);
+  db.close();
+  if (!row) {
+    console.log(JSON.stringify({ code, found: false }, null, 2));
+    return;
+  }
+  console.log(JSON.stringify({ code, found: true, stock: row }, null, 2));
 }
 
 async function runTask(date: TradeDate, task: 'daily_review' | 'next_day_plan' | 'news_classification' | 'theme_mapping') {
@@ -161,6 +191,9 @@ if (command === 'mock') await saveMock(date);
 else if (command === 'import:json') importJson(requiredArg(process.argv[3], 'json file path'));
 else if (command === 'import:csv') importCsv(requiredArg(process.argv[3], 'csv file path'), process.argv[4] ?? '2026-06-28');
 else if (command === 'import:ths-stockname') importThsMacStockName(requiredArg(process.argv[3], 'ths stockname ini path'));
+else if (command === 'stock:list') listStockCommand(process.argv[3], process.argv[4]);
+else if (command === 'stock:search') searchStockCommand(requiredArg(process.argv[3], 'stock query'), process.argv[4], process.argv[5]);
+else if (command === 'stock:get') getStockCommand(requiredArg(process.argv[3], 'stock code'));
 else if (command === 'ai:review') await runTask(date, 'daily_review');
 else if (command === 'ai:plan') await runTask(date, 'next_day_plan');
 else if (command === 'ai:news') await runTask(date, 'news_classification');
