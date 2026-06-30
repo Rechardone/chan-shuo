@@ -54,8 +54,8 @@ export function parseThsMacStockNameIni(raw: Buffer | Uint8Array | string): ThsM
       name,
       alias: alias || undefined,
       section,
-      market: inferMarket(key, section),
-      kind: inferKind(key, name, section),
+      market: inferMarket(key),
+      kind: inferKind(key, name),
       raw: value
     });
   }
@@ -75,33 +75,18 @@ function cleanupStockName(value: string): string {
   return value.replace(/\s+/g, ' ').trim();
 }
 
-function inferMarket(code: string, section: string): ThsMacStockNameEntry['market'] {
-  if (section.endsWith('_33') || /^6\d{5}$/.test(code)) return 'sh';
-  if (section.endsWith('_32') || /^(0|1|2|3)\d{5}$/.test(code)) return 'sz';
-  if (section.endsWith('_35') || /^(4|8|9)\d{5}$/.test(code)) return 'bj';
+function inferMarket(code: string): ThsMacStockNameEntry['market'] {
+  if (/^(000|001|002|003|200|300|301)\d{3}$/.test(code)) return 'sz';
+  if (/^(600|601|603|605|688|689|900)\d{3}$/.test(code)) return 'sh';
+  if (/^(43|83|87|88|92)\d{4}$/.test(code)) return 'bj';
   return 'unknown';
 }
 
-function inferKind(code: string, name: string, section: string): ThsMacStockNameEntry['kind'] {
-  if (section.endsWith('_32')) {
-    if (/^(000|001|002|003|300|301)\d{3}$/.test(code)) return 'stock';
-    if (/^(159|160|161|162|163|164|165|166|167|168|169)\d{3}$/.test(code)) return 'fund';
-    if (/^(10|11|12)\d{4}$/.test(code)) return 'bond';
-    return 'index';
-  }
-
-  if (section.endsWith('_33')) {
-    if (/^(600|601|603|605|688|689)\d{3}$/.test(code)) return 'stock';
-    if (/^(510|511|512|513|515|516|517|518|519|588|589)\d{3}$/.test(code)) return 'fund';
-    if (/^(110|113|118)\d{3}$/.test(code)) return 'bond';
-    return 'index';
-  }
-
-  if (section.endsWith('_35')) {
-    if (/^(43|83|87|88|92)\d{4}$/.test(code)) return 'stock';
-    return 'unknown';
-  }
-
-  if (/退|债|ETF|LOF|基金|指数|转债/.test(name)) return 'unknown';
+function inferKind(code: string, name: string): ThsMacStockNameEntry['kind'] {
+  if (/^(000|001|002|003|300|301|600|601|603|605|688|689|43|83|87|88|92)\d{3,4}$/.test(code)) return 'stock';
+  if (/^(200|900)\d{3}$/.test(code)) return 'stock';
+  if (/^(159|160|161|162|163|164|165|166|167|168|169|510|511|512|513|515|516|517|518|519|588|589)\d{3}$/.test(code)) return 'fund';
+  if (/^(10|11|12)\d{4}$/.test(code) || /^(110|113|118)\d{3}$/.test(code)) return 'bond';
+  if (/指数|深证|上证|沪深|中证|创业板指|科创|国证|红利|综指|成指|ETF|LOF|基金|转债|债/.test(name)) return 'index';
   return 'unknown';
 }
