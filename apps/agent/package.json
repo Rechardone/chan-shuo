@@ -13,6 +13,7 @@
     "news": "tsx src/db-cli.ts ai:news",
     "theme": "tsx src/db-cli.ts ai:theme",
     "alerts": "tsx src/db-cli.ts alerts",
+    "quality": "tsx src/quality-cli.ts",
     "report:md": "tsx src/db-cli.ts report:md",
     "queue:add": "tsx src/db-cli.ts queue:add",
     "queue:list": "tsx src/db-cli.ts queue:list",
