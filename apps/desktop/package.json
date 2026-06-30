@@ -4,11 +4,11 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "web:dev": "ng serve --host 127.0.0.1 --port 4200",
-    "dev": "node scripts/ensure-tauri-icons.mjs && tauri dev",
-    "build": "ng build",
-    "tauri:build": "node scripts/ensure-tauri-icons.mjs && tauri build",
-    "typecheck": "ng build"
+    "web:dev": "NG_CLI_ANALYTICS=false ng serve --host 127.0.0.1 --port 4200",
+    "dev": "node scripts/ensure-tauri-icons.mjs && NG_CLI_ANALYTICS=false tauri dev",
+    "build": "NG_CLI_ANALYTICS=false ng build",
+    "tauri:build": "node scripts/ensure-tauri-icons.mjs && NG_CLI_ANALYTICS=false tauri build",
+    "typecheck": "NG_CLI_ANALYTICS=false ng build"
   },
   "dependencies": {
     "@angular/animations": "^18.2.13",
