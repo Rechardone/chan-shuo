@@ -80,7 +80,7 @@ button:disabled {
   padding: 18px;
 }
 
-.mood-card span, .panel-title span, .news-row span, .mood-card small, .model-card span, .model-card small, .analysis-card span, .log-card span, .queue-card span, .source-grid span, .source-grid small, .hint-text {
+.mood-card span, .panel-title span, .news-row span, .mood-card small, .model-card span, .model-card small, .analysis-card span, .log-card span, .queue-card span, .source-grid span, .source-grid small, .hint-text, .quality-grid small, .quality-head p {
   color: #718099;
 }
 
@@ -108,8 +108,55 @@ button:disabled {
   gap: 18px;
 }
 
-.source-panel, .stock-panel {
+.quality-panel, .source-panel, .stock-panel {
   margin-bottom: 18px;
+}
+
+.quality-head {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #f7f9fc;
+}
+
+.quality-head strong {
+  min-width: 76px;
+  font-size: 42px;
+  line-height: 1;
+  color: #255a99;
+}
+
+.quality-head h3 {
+  margin-bottom: 6px;
+}
+
+.quality-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.quality-grid article {
+  padding: 14px;
+  border: 1px solid #e4e9f2;
+  border-radius: 16px;
+  background: #fbfdff;
+}
+
+.quality-grid article.missing {
+  background: #fff8e6;
+}
+
+.quality-grid span, .quality-grid strong, .quality-grid small {
+  display: block;
+}
+
+.quality-grid strong {
+  margin: 8px 0;
+  font-size: 24px;
 }
 
 .source-grid {
