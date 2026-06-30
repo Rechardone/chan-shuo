@@ -78,6 +78,31 @@ const cases = [
     fileContains: { path: reviewReportAbsPath, text: '## 0. 数据质量' }
   },
   {
+    batch: 'Report Center',
+    name: 'Generated report is available for preview',
+    fileContains: { path: reviewReportAbsPath, text: '# Chan Shuo' }
+  },
+  {
+    batch: 'Report Center',
+    name: 'Tauri report preview command exists',
+    fileContains: { path: resolve(workspaceRoot, 'apps/desktop/src-tauri/src/main.rs'), text: 'fn read_report' }
+  },
+  {
+    batch: 'Report Center',
+    name: 'Tauri report preview command is registered',
+    fileContains: { path: resolve(workspaceRoot, 'apps/desktop/src-tauri/src/main.rs'), text: 'read_report,' }
+  },
+  {
+    batch: 'Report Center',
+    name: 'Desktop report preview service exists',
+    fileContains: { path: resolve(workspaceRoot, 'apps/desktop/src/app/report-center.service.ts'), text: "invoke<ReportContentView>('read_report'" }
+  },
+  {
+    batch: 'Report Center',
+    name: 'Desktop report preview UI exists',
+    fileContains: { path: resolve(workspaceRoot, 'apps/desktop/src/app/app.component.html'), text: 'report-preview' }
+  },
+  {
     batch: 'Batch 5',
     name: 'Queue add workflow',
     command: ['pnpm', ['queue:add', tradeDate, 'review,plan,report']],
