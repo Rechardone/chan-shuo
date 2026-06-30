@@ -80,7 +80,7 @@ button:disabled {
   padding: 18px;
 }
 
-.mood-card span, .panel-title span, .news-row span, .mood-card small, .model-card span, .model-card small, .analysis-card span, .log-card span, .queue-card span, .source-grid span, .source-grid small, .hint-text, .quality-grid small, .quality-head p, .queue-stats span {
+.mood-card span, .panel-title span, .news-row span, .mood-card small, .model-card span, .model-card small, .analysis-card span, .log-card span, .queue-card span, .source-grid span, .source-grid small, .hint-text, .quality-grid small, .quality-head p, .queue-stats span, .workflow-steps span {
   color: #718099;
 }
 
@@ -280,6 +280,21 @@ th {
 
 .model-panel, .analysis-panel, .task-panel, .task-log-panel, .queue-panel {
   margin-top: 18px;
+}
+
+.workflow-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.workflow-steps span {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #f7f9fc;
+  border: 1px solid #e4e9f2;
+  font-size: 12px;
 }
 
 .queue-stats {
