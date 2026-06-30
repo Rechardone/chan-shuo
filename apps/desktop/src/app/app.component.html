@@ -5,7 +5,7 @@
       <h1>A股消息派 AI 复盘系统</h1>
       <p class="subtitle">消息 → 题材 → 涨停梯队 → 情绪周期 → AI 复盘</p>
     </div>
-    <button class="primary" (click)="runTask('review')" [disabled]="taskRunning">生成 AI 复盘</button>
+    <button class="primary" (click)="runDailyWorkflow()" [disabled]="taskRunning">一键复盘</button>
   </header>
 
   <section class="mood-grid">
@@ -152,9 +152,10 @@
       </div>
       <p>{{ aiSummary }}</p>
       <div class="actions">
-        <button (click)="runTask('review')" [disabled]="taskRunning">分析今日市场</button>
-        <button (click)="runTask('plan')" [disabled]="taskRunning">明日观察计划</button>
-        <button (click)="runTask('report')" [disabled]="taskRunning">导出报告</button>
+        <button (click)="runDailyWorkflow()" [disabled]="taskRunning">一键复盘：复盘+计划+风控+报告</button>
+        <button (click)="runTask('review')" [disabled]="taskRunning">只分析市场</button>
+        <button (click)="runTask('plan')" [disabled]="taskRunning">只生成明日计划</button>
+        <button (click)="runTask('report')" [disabled]="taskRunning">只导出报告</button>
         <button (click)="enqueueDailyWorkflow()">入库队列：复盘+计划+报告</button>
       </div>
     </section>
@@ -166,6 +167,9 @@
       <span>{{ taskRunning ? '执行中' : '空闲' }}</span>
     </div>
     <p>{{ taskMessage }}</p>
+    <div class="workflow-steps" *ngIf="workflowSteps.length > 0">
+      <span *ngFor="let step of workflowSteps">{{ step }}</span>
+    </div>
     <pre *ngIf="lastTaskResult">{{ lastTaskResult.stdout || lastTaskResult.stderr }}</pre>
   </section>
 
