@@ -38,10 +38,26 @@ export class TaskQueueService {
     );
   }
 
+  cancelQueued(): Observable<TaskQueueItemView[]> {
+    return this.updateQueueFromCommand('cancel_queued_tasks');
+  }
+
+  clearFinished(): Observable<TaskQueueItemView[]> {
+    return this.updateQueueFromCommand('clear_finished_tasks');
+  }
+
   runNext(): Observable<AgentTaskResult> {
     return from(invoke<AgentTaskResult>('run_next_persistent_task')).pipe(
       tap(() => this.loadQueue().subscribe()),
       catchError((error) => of({ ok: false, command: 'run_next_persistent_task', stdout: '', stderr: String(error) }))
+    );
+  }
+
+  private updateQueueFromCommand(command: 'cancel_queued_tasks' | 'clear_finished_tasks'): Observable<TaskQueueItemView[]> {
+    return from(invoke<TauriPersistentTaskRow[]>(command)).pipe(
+      map((rows) => rows.map((row) => this.toView(row))),
+      tap((items) => this.itemsSubject.next(items)),
+      catchError(() => of(this.itemsSubject.value))
     );
   }
 
