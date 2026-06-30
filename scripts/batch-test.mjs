@@ -38,6 +38,12 @@ const cases = [
     expect: [`mock data saved: ${tradeDate}`]
   },
   {
+    batch: 'Batch 3',
+    name: 'Mock news import is idempotent',
+    command: ['sqlite3', ['data/market-core.db', `select count(*) from news_flash where news_time like '${tradeDate}%';`]],
+    expectRegex: ['^1$']
+  },
+  {
     batch: 'Batch 6',
     name: 'Data quality evaluator',
     command: ['pnpm', ['quality', tradeDate]],
@@ -113,7 +119,7 @@ for (const testCase of cases) {
   const stderr = output.stderr ?? '';
   const combined = `${stdout}\n${stderr}`;
   const expectsPassed = (testCase.expect ?? []).every((item) => combined.includes(item));
-  const regexPassed = (testCase.expectRegex ?? []).every((pattern) => new RegExp(pattern, 'm').test(combined));
+  const regexPassed = (testCase.expectRegex ?? []).every((pattern) => new RegExp(pattern, 'm').test(combined.trim()));
   const ok = output.status === 0 && expectsPassed && regexPassed;
   results.push({
     ...testCase,
@@ -124,7 +130,7 @@ for (const testCase of cases) {
     stderr,
     missing: [
       ...(testCase.expect ?? []).filter((item) => !combined.includes(item)),
-      ...(testCase.expectRegex ?? []).filter((pattern) => !new RegExp(pattern, 'm').test(combined)).map((pattern) => `regex:${pattern}`)
+      ...(testCase.expectRegex ?? []).filter((pattern) => !new RegExp(pattern, 'm').test(combined.trim())).map((pattern) => `regex:${pattern}`)
     ]
   });
 }
