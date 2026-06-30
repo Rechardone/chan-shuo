@@ -10,11 +10,19 @@ export interface StockSourceStatus {
   message: string;
 }
 
+export interface StockBasicView {
+  code: string;
+  name: string;
+  market: string;
+  industry: string;
+  updated_at: string;
+}
+
 export const DEFAULT_STOCK_SOURCE_STATUS: StockSourceStatus = {
   default_path: '~/Library/Containers/cn.com.10jqka.macstockPro/Data/Documents/stockname/32_0_base.ini',
   file_exists: false,
   stock_count: 0,
-  message: '当前为前端预览模式，未连接 Tauri 数据源'
+  message: 'Preview mode: Tauri datasource is not connected'
 };
 
 @Injectable({ providedIn: 'root' })
@@ -31,13 +39,15 @@ export class StockSourceService {
     );
   }
 
+  searchStocks(query: string, limit = 50): Observable<StockBasicView[]> {
+    return from(this.safeInvoke<StockBasicView[]>('search_stocks', { query, limit })).pipe(
+      catchError(() => of([]))
+    );
+  }
+
   private safeInvoke<T>(command: string, args?: Record<string, unknown>): Promise<T> {
-    if (!this.isTauriRuntime()) {
-      return Promise.reject(new Error('当前运行在浏览器预览模式，请用 pnpm desktop:dev 启动 Tauri 桌面端'));
-    }
-    if (typeof invoke !== 'function') {
-      return Promise.reject(new Error('Tauri invoke 不可用，请确认当前窗口是 Tauri App 而不是普通浏览器'));
-    }
+    if (!this.isTauriRuntime()) return Promise.reject(new Error('Not running inside Tauri desktop'));
+    if (typeof invoke !== 'function') return Promise.reject(new Error('Tauri invoke is unavailable'));
     return invoke<T>(command, args);
   }
 
@@ -47,8 +57,6 @@ export class StockSourceService {
 
   private formatPreviewMessage(error: unknown): string {
     const message = error instanceof Error ? error.message : String(error);
-    return message.includes('浏览器预览模式') || message.includes('invoke')
-      ? message
-      : `读取 Tauri 数据源失败：${message}`;
+    return `Tauri datasource failed: ${message}`;
   }
 }
