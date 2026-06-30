@@ -108,7 +108,7 @@ button:disabled {
   gap: 18px;
 }
 
-.source-panel {
+.source-panel, .stock-panel {
   margin-bottom: 18px;
 }
 
@@ -145,6 +145,26 @@ button:disabled {
   border-radius: 12px;
   background: #fff8e6;
   line-height: 1.7;
+}
+
+.stock-search-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.stock-search-row input {
+  flex: 1;
+  min-width: 240px;
+  border: 1px solid #d8e0ec;
+  border-radius: 999px;
+  padding: 11px 16px;
+  font-size: 14px;
+  outline: none;
+}
+
+.stock-search-row input:focus {
+  border-color: #2f6eb2;
 }
 
 table {
@@ -206,7 +226,7 @@ th {
   gap: 10px;
 }
 
-.actions button, .env-preview button {
+.actions button, .env-preview button, .stock-search-row button {
   background: #edf3fb;
   color: #25334c;
 }
