@@ -16,6 +16,27 @@
     </article>
   </section>
 
+  <section class="panel quality-panel">
+    <div class="panel-title">
+      <h2>数据质量</h2>
+      <span>{{ qualityLabel(dataQuality.level) }}</span>
+    </div>
+    <div class="quality-head">
+      <strong>{{ dataQuality.score }}</strong>
+      <div>
+        <h3>{{ dataQuality.summary }}</h3>
+        <p>复盘前先检查市场情绪、涨停池、题材排行、新闻快讯是否完整。</p>
+      </div>
+    </div>
+    <div class="quality-grid">
+      <article *ngFor="let check of dataQuality.checks" [class.missing]="!check.ok">
+        <span>{{ check.ok ? '✅' : '⚠️' }} {{ check.label }}</span>
+        <strong>{{ check.count }}</strong>
+        <small>{{ check.message }}</small>
+      </article>
+    </div>
+  </section>
+
   <section class="panel source-panel">
     <div class="panel-title">
       <h2>数据源状态</h2>
