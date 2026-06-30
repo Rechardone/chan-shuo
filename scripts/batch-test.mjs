@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path';
 
 const workspaceRoot = process.cwd();
 const tradeDate = process.argv[2] ?? '2026-06-28';
+const sampleCsvTradeDate = '2026-06-27';
 const runId = new Date().toISOString().replace(/[:.]/g, '-');
 const defaultReportPath = `reports/batch-test-${tradeDate}-${runId}.md`;
 const reportPath = process.argv[3] ?? defaultReportPath;
@@ -50,6 +51,35 @@ const cases = [
     batch: 'Batch 2',
     name: 'Root stock scripts are exposed',
     fileContains: { path: resolve(workspaceRoot, 'package.json'), text: '"stock:search"' }
+  },
+  {
+    batch: 'Batch 3',
+    name: 'CSV importer supports compact sample rows',
+    fileContains: { path: resolve(workspaceRoot, 'packages/sources/src/importers.ts'), text: 'normalizeNewsTime(rawNewsTime, tradeDate)' }
+  },
+  {
+    batch: 'Batch 3',
+    name: 'Sample CSV review data import',
+    command: ['pnpm', ['agent:import:csv', 'data/sample-limit-up.csv', sampleCsvTradeDate]],
+    expect: [`csv data imported: data/sample-limit-up.csv -> ${sampleCsvTradeDate}`]
+  },
+  {
+    batch: 'Batch 3',
+    name: 'Sample CSV theme rows imported',
+    command: ['sqlite3', ['data/market-core.db', `select count(*) from theme_daily_rank where trade_date = '${sampleCsvTradeDate}';`]],
+    expectRegex: ['^2$']
+  },
+  {
+    batch: 'Batch 3',
+    name: 'Sample CSV limit-up rows imported',
+    command: ['sqlite3', ['data/market-core.db', `select count(*) from limit_up_daily where trade_date = '${sampleCsvTradeDate}';`]],
+    expectRegex: ['^2$']
+  },
+  {
+    batch: 'Batch 3',
+    name: 'Sample CSV news rows imported',
+    command: ['sqlite3', ['data/market-core.db', `select count(*) from news_flash where news_time like '${sampleCsvTradeDate}%';`]],
+    expectRegex: ['^1$']
   },
   {
     batch: 'Batch 3',
@@ -186,6 +216,7 @@ const lines = [];
 lines.push(`# Chan Shuo Batch Test Report`);
 lines.push('');
 lines.push(`- Trade date: ${tradeDate}`);
+lines.push(`- Sample CSV trade date: ${sampleCsvTradeDate}`);
 lines.push(`- Run id: ${runId}`);
 lines.push(`- Workspace root: ${workspaceRoot}`);
 lines.push(`- Batch report: ${reportPath}`);
