@@ -43,7 +43,10 @@ export class AppComponent {
   taskLogs: TaskLogView[] = [];
   queueItems: TaskQueueItemView[] = [];
   reports: ReportFileView[] = [];
+  selectedReport?: ReportFileView;
+  reportPreview = '';
   reportsMessage = '报告中心待刷新';
+  reportPreviewMessage = '选择一份报告查看 Markdown 预览';
   stockSourceStatus: StockSourceStatus = DEFAULT_STOCK_SOURCE_STATUS;
   stockImporting = false;
   stockQuery = '';
@@ -163,6 +166,28 @@ export class AppComponent {
     this.reportCenterService.listReports().subscribe((items) => {
       this.reports = items;
       this.reportsMessage = items.length > 0 ? `已读取 ${items.length} 份本地报告` : '暂无本地 Markdown 报告';
+      if (items.length === 0) {
+        this.selectedReport = undefined;
+        this.reportPreview = '';
+        this.reportPreviewMessage = '暂无可预览报告';
+        return;
+      }
+      const current = this.selectedReport ? items.find((item) => item.name === this.selectedReport?.name) : undefined;
+      this.previewReport(current ?? items[0]);
+    });
+  }
+
+  previewReport(report: ReportFileView) {
+    this.selectedReport = report;
+    this.reportPreviewMessage = `正在读取：${report.name}`;
+    this.reportCenterService.readReport(report.name).subscribe((content) => {
+      if (!content) {
+        this.reportPreview = '';
+        this.reportPreviewMessage = `读取失败：${report.name}`;
+        return;
+      }
+      this.reportPreview = content.content;
+      this.reportPreviewMessage = `正在预览：${content.name}`;
     });
   }
 
