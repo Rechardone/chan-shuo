@@ -56,6 +56,14 @@ struct PersistentTaskRow {
     updated_at: String,
 }
 
+#[derive(Serialize)]
+struct StockSourceStatus {
+    default_path: String,
+    file_exists: bool,
+    stock_count: i64,
+    message: String,
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 struct TaskLogEntry {
     id: String,
@@ -224,6 +232,48 @@ fn run_next_persistent_task() -> Result<AgentTaskResult, String> {
 }
 
 #[tauri::command]
+fn load_stock_source_status(db_path: Option<String>) -> Result<StockSourceStatus, String> {
+    let default_path = default_ths_stockname_path();
+    let file_exists = default_path.exists();
+    let stock_count = open_db(db_path).map(|conn| count_stock_rows(&conn)).unwrap_or(0);
+    let message = if stock_count > 0 {
+        format!("已导入股票基础库 {} 条", stock_count)
+    } else if file_exists {
+        "检测到 Mac 同花顺股票基础库，可点击导入".into()
+    } else {
+        "未检测到 Mac 同花顺股票基础库".into()
+    };
+    Ok(StockSourceStatus { default_path: default_path.to_string_lossy().to_string(), file_exists, stock_count, message })
+}
+
+#[tauri::command]
+fn import_ths_stock_names(path: Option<String>) -> Result<StockSourceStatus, String> {
+    let stock_path = path.map(PathBuf::from).unwrap_or_else(default_ths_stockname_path);
+    if !stock_path.exists() {
+        return Err(format!("stockname ini not found: {}", stock_path.to_string_lossy()));
+    }
+    let command = format!("pnpm --filter @chan-shuo/agent import:ths-stockname {}", stock_path.to_string_lossy());
+    let output = Command::new("pnpm")
+        .args(["--filter", "@chan-shuo/agent", "import:ths-stockname", stock_path.to_string_lossy().as_ref()])
+        .output()
+        .map_err(|err| err.to_string())?;
+    append_task_log(TaskLogEntry {
+        id: now_id(),
+        task: "import:ths-stockname".into(),
+        trade_date: "stock-basic".into(),
+        command,
+        ok: output.status.success(),
+        stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+        stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+        created_at: now_id(),
+    })?;
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).to_string());
+    }
+    load_stock_source_status(None)
+}
+
+#[tauri::command]
 fn load_task_logs() -> Result<Vec<TaskLogEntry>, String> {
     let path = task_log_path();
     if !path.exists() { return Ok(vec![]); }
@@ -269,6 +319,15 @@ fn validate_queue_task(task: &str) -> Result<(), String> {
         "review" | "plan" | "news" | "theme" | "alerts" | "report" => Ok(()),
         _ => Err(format!("unsupported queue task: {}", task)),
     }
+}
+
+fn count_stock_rows(conn: &Connection) -> i64 {
+    conn.query_row("SELECT COUNT(*) FROM stock", [], |row| row.get(0)).unwrap_or(0)
+}
+
+fn default_ths_stockname_path() -> PathBuf {
+    let home = std::env::var("HOME").unwrap_or_default();
+    PathBuf::from(home).join("Library/Containers/cn.com.10jqka.macstockPro/Data/Documents/stockname/32_0_base.ini")
 }
 
 fn load_persistent_tasks_from_conn(conn: &Connection, limit: i64) -> Result<Vec<PersistentTaskRow>, String> {
@@ -352,6 +411,8 @@ fn main() {
             enqueue_persistent_tasks,
             load_persistent_tasks,
             run_next_persistent_task,
+            load_stock_source_status,
+            import_ths_stock_names,
             load_task_logs,
             load_model_config,
             save_model_config
