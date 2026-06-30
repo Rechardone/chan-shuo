@@ -10,11 +10,21 @@ export interface ReportFileView {
   modified_at: string;
 }
 
+export interface ReportContentView extends ReportFileView {
+  content: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ReportCenterService {
   listReports(): Observable<ReportFileView[]> {
     return from(invoke<ReportFileView[]>('list_reports')).pipe(
       catchError(() => of([]))
+    );
+  }
+
+  readReport(name: string): Observable<ReportContentView | undefined> {
+    return from(invoke<ReportContentView>('read_report', { name })).pipe(
+      catchError(() => of(undefined))
     );
   }
 
