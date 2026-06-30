@@ -97,17 +97,31 @@ impl Default for ModelConfig {
     }
 }
 
+fn workspace_root() -> PathBuf {
+    let mut current = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    for _ in 0..8 {
+        if current.join("pnpm-workspace.yaml").exists() && current.join("package.json").exists() {
+            return current;
+        }
+        if !current.pop() { break; }
+    }
+    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+}
+
+fn project_data_path(file_name: &str) -> PathBuf {
+    workspace_root().join("data").join(file_name)
+}
+
 fn open_db(db_path: Option<String>) -> Result<Connection, String> {
-    let path = db_path.map(PathBuf::from).unwrap_or_else(|| PathBuf::from("data/market-core.db"));
+    let path = db_path.map(PathBuf::from).unwrap_or_else(|| project_data_path("market-core.db"));
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|err| err.to_string())?;
+    }
     Connection::open(path).map_err(|err| err.to_string())
 }
 
-fn data_path(file_name: &str) -> PathBuf {
-    std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")).join("data").join(file_name)
-}
-
-fn config_path() -> PathBuf { data_path("model-config.json") }
-fn task_log_path() -> PathBuf { data_path("task-log.json") }
+fn config_path() -> PathBuf { project_data_path("model-config.json") }
+fn task_log_path() -> PathBuf { project_data_path("task-log.json") }
 fn now_id() -> String {
     SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs().to_string()
 }
@@ -177,7 +191,7 @@ fn run_agent_task(task: String, trade_date: String) -> Result<AgentTaskResult, S
         _ => return Err(format!("unsupported agent task: {}", task)),
     };
     let command = format!("pnpm --filter @chan-shuo/agent {} {}", script, trade_date);
-    let output = Command::new("pnpm").args(["--filter", "@chan-shuo/agent", script, trade_date.as_str()]).output().map_err(|err| err.to_string())?;
+    let output = Command::new("pnpm").current_dir(workspace_root()).args(["--filter", "@chan-shuo/agent", script, trade_date.as_str()]).output().map_err(|err| err.to_string())?;
     let result = AgentTaskResult {
         ok: output.status.success(),
         command: command.clone(),
@@ -220,6 +234,7 @@ fn load_persistent_tasks(db_path: Option<String>) -> Result<Vec<PersistentTaskRo
 fn run_next_persistent_task() -> Result<AgentTaskResult, String> {
     let command = "pnpm --filter @chan-shuo/agent queue:run-once".to_string();
     let output = Command::new("pnpm")
+        .current_dir(workspace_root())
         .args(["--filter", "@chan-shuo/agent", "queue:run-once"])
         .output()
         .map_err(|err| err.to_string())?;
@@ -253,6 +268,7 @@ fn import_ths_stock_names(path: Option<String>) -> Result<StockSourceStatus, Str
     let stock_path = path.map(PathBuf::from).unwrap_or_else(default_ths_stockname_path);
     let command = format!("pnpm --filter @chan-shuo/agent import:ths-stockname {}", stock_path.to_string_lossy());
     let output = Command::new("pnpm")
+        .current_dir(workspace_root())
         .args(["--filter", "@chan-shuo/agent", "import:ths-stockname", stock_path.to_string_lossy().as_ref()])
         .output()
         .map_err(|err| err.to_string())?;
