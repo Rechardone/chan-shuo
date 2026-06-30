@@ -1,7 +1,7 @@
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -73,12 +73,21 @@ struct StockBasicRow {
     updated_at: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 struct ReportFileRow {
     name: String,
     path: String,
     size_bytes: u64,
     modified_at: String,
+}
+
+#[derive(Serialize)]
+struct ReportContentRow {
+    name: String,
+    path: String,
+    size_bytes: u64,
+    modified_at: String,
+    content: String,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -309,11 +318,7 @@ fn search_stocks(db_path: Option<String>, query: String, limit: Option<i64>) -> 
     let conn = open_db(db_path)?;
     let safe_limit = limit.unwrap_or(50).clamp(1, 200);
     let keyword = query.trim().to_string();
-    if keyword.is_empty() {
-        load_stock_rows(&conn, safe_limit)
-    } else {
-        search_stock_rows(&conn, &keyword, safe_limit)
-    }
+    if keyword.is_empty() { load_stock_rows(&conn, safe_limit) } else { search_stock_rows(&conn, &keyword, safe_limit) }
 }
 
 #[tauri::command]
@@ -351,17 +356,25 @@ fn list_reports() -> Result<Vec<ReportFileRow>, String> {
         let entry = entry.map_err(|err| err.to_string())?;
         let path = entry.path();
         if path.extension().and_then(|value| value.to_str()) != Some("md") { continue; }
-        let meta = entry.metadata().map_err(|err| err.to_string())?;
-        let modified_at = meta.modified().ok().and_then(system_time_secs).unwrap_or_default().to_string();
-        rows.push(ReportFileRow {
-            name: path.file_name().and_then(|value| value.to_str()).unwrap_or("report.md").to_string(),
-            path: path.to_string_lossy().to_string(),
-            size_bytes: meta.len(),
-            modified_at,
-        });
+        rows.push(report_file_row(&path)?);
     }
     rows.sort_by(|a, b| b.modified_at.cmp(&a.modified_at));
     Ok(rows.into_iter().take(50).collect())
+}
+
+#[tauri::command]
+fn read_report(name: String) -> Result<ReportContentRow, String> {
+    let path = safe_report_path(&name)?;
+    if !path.exists() { return Err(format!("report not found: {}", name)); }
+    let meta = report_file_row(&path)?;
+    let content = fs::read_to_string(&path).map_err(|err| err.to_string())?;
+    Ok(ReportContentRow {
+        name: meta.name,
+        path: meta.path,
+        size_bytes: meta.size_bytes,
+        modified_at: meta.modified_at,
+        content,
+    })
 }
 
 #[tauri::command]
@@ -438,6 +451,28 @@ fn default_ths_stockname_path() -> PathBuf {
 
 fn system_time_secs(value: SystemTime) -> Option<u64> {
     value.duration_since(UNIX_EPOCH).ok().map(|duration| duration.as_secs())
+}
+
+fn report_file_row(path: &Path) -> Result<ReportFileRow, String> {
+    let meta = fs::metadata(path).map_err(|err| err.to_string())?;
+    let modified_at = meta.modified().ok().and_then(system_time_secs).unwrap_or_default().to_string();
+    Ok(ReportFileRow {
+        name: path.file_name().and_then(|value| value.to_str()).unwrap_or("report.md").to_string(),
+        path: path.to_string_lossy().to_string(),
+        size_bytes: meta.len(),
+        modified_at,
+    })
+}
+
+fn safe_report_path(name: &str) -> Result<PathBuf, String> {
+    let file_name = Path::new(name)
+        .file_name()
+        .and_then(|value| value.to_str())
+        .ok_or_else(|| format!("invalid report name: {}", name))?;
+    if !file_name.ends_with(".md") {
+        return Err(format!("only markdown reports can be previewed: {}", file_name));
+    }
+    Ok(reports_dir().join(file_name))
 }
 
 fn load_persistent_tasks_from_conn(conn: &Connection, limit: i64) -> Result<Vec<PersistentTaskRow>, String> {
@@ -557,6 +592,7 @@ fn main() {
             search_stocks,
             import_ths_stock_names,
             list_reports,
+            read_report,
             open_reports_dir,
             load_task_logs,
             load_model_config,
