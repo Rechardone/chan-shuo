@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DashboardViewModel, MOCK_DASHBOARD } from './market-dashboard.data';
+import { DashboardViewModel, DataQualityView, MOCK_DASHBOARD } from './market-dashboard.data';
 import { MarketDashboardService } from './market-dashboard.service';
 import { MODEL_SETTINGS, ModelPresetView, ModelSettingsViewModel } from './model-settings.data';
 import { AiAnalysisService } from './ai-analysis.service';
@@ -36,6 +36,7 @@ export class AppComponent {
   limits = this.vm.limits;
   news = this.vm.news;
   aiSummary = this.vm.aiSummary;
+  dataQuality: DataQualityView = this.vm.dataQuality;
   analyses: AiAnalysisView[] = [];
   taskLogs: TaskLogView[] = [];
   queueItems: TaskQueueItemView[] = [];
@@ -156,6 +157,10 @@ export class AppComponent {
     this.stockSourceService.searchStocks(this.stockQuery, 80).subscribe((rows) => this.stockRows = rows);
   }
 
+  qualityLabel(level: DataQualityView['level']) {
+    return { good: '数据完整', partial: '部分缺失', empty: '缺少数据' }[level];
+  }
+
   buildEnvPreview(preset = this.selectedPreset) {
     if (preset.runtime === 'mock') return 'mock runtime';
     if (preset.runtime === 'ollama') {
@@ -181,5 +186,6 @@ export class AppComponent {
     this.limits = vm.limits;
     this.news = vm.news;
     this.aiSummary = vm.aiSummary;
+    this.dataQuality = vm.dataQuality;
   }
 }
