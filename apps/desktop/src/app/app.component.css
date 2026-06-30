@@ -80,7 +80,7 @@ button:disabled {
   padding: 18px;
 }
 
-.mood-card span, .panel-title span, .news-row span, .mood-card small, .model-card span, .model-card small, .analysis-card span, .log-card span, .queue-card span, .source-grid span, .source-grid small {
+.mood-card span, .panel-title span, .news-row span, .mood-card small, .model-card span, .model-card small, .analysis-card span, .log-card span, .queue-card span, .source-grid span, .source-grid small, .hint-text {
   color: #718099;
 }
 
@@ -137,6 +137,14 @@ button:disabled {
 .source-grid small {
   line-height: 1.5;
   word-break: break-all;
+}
+
+.hint-text {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff8e6;
+  line-height: 1.7;
 }
 
 table {
