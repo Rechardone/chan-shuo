@@ -1,9 +1,10 @@
 # 测试工作流
 
-本项目现在支持两条测试路径：
+本项目现在支持三条测试路径：
 
 1. GitHub Actions 自动跑通用 batch-test。
 2. 本地 Mac 一键生成 latest 测试报告。
+3. 本地测试报告发布到独立 `test-reports` 分支，方便 ChatGPT 读取。
 
 ## 1. GitHub Actions 自动测试
 
@@ -90,7 +91,45 @@ reports/latest-batch-review.md
 
 以后排错时，只需要看这几个 latest 文件，不用手动找最新时间戳文件。
 
-## 3. 推荐日常流程
+## 3. 发布本地报告到独立分支
+
+本地测试跑完后，执行：
+
+```bash
+pnpm report:publish
+```
+
+默认会把 latest 报告发布到：
+
+```text
+test-reports
+```
+
+这个分支只放报告，不放业务代码。
+
+报告路径固定为：
+
+```text
+latest/manifest.json
+latest/latest-local-test.log
+latest/latest-local-summary.md
+latest/latest-batch-test.md
+latest/latest-batch-review.md
+```
+
+历史报告会保存到：
+
+```text
+runs/run-<timestamp>/
+```
+
+完整说明见：
+
+```text
+docs/report-branch-workflow.md
+```
+
+## 4. 推荐日常流程
 
 ### 我提交代码后
 
@@ -102,9 +141,14 @@ reports/latest-batch-review.md
 
 ```bash
 pnpm local:test-report
+pnpm report:publish
 ```
 
-然后把 `reports/latest-local-test.log` 的报错贴出来，或者把这几个 latest 文件打包给我。
+然后告诉我：
+
+```text
+我已经 pnpm report:publish 了，你读取 test-reports 最新报告继续修。
+```
 
 ### 如果涉及同花顺本地文件
 
@@ -116,9 +160,10 @@ pnpm stock:search 平安
 pnpm stock:search 300750
 ```
 
-## 4. 注意事项
+## 5. 注意事项
 
 - `LLM_PROVIDER` 默认会在本地脚本里设成 `mock`，避免测试时意外调用云模型。
 - GitHub Actions artifact 默认保留 14 天。
-- `reports/latest-*.md` 和 `reports/*.log` 是运行产物，不应提交到 Git。
+- `reports/latest-*.md` 和 `reports/*.log` 是运行产物，不应提交到开发分支。
+- `test-reports` 是专用报告分支，不要 merge 回 `codex/batch-01-bootstrap`。
 - 如果需要长期保留某次测试结论，请手动复制到 `docs/` 下作为正式文档。
