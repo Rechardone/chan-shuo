@@ -1,98 +1,39 @@
-# A股消息派 AI 复盘系统（chan-shuo）
+# Chan Shuo Test Reports
 
-目标：做一个面向 Mac 的消息派/涨停复盘/题材情绪/AI 分析工具。
+这个分支只保存测试报告，不参与业务代码开发。
 
-## MVP 路线
+## Latest
 
-1. 先用 Mock / JSON / CSV 数据跑通数据库与看板。
-2. 再接合法数据源或用户导出数据。
-3. 优先支持多模型低成本方案：本地 Gemma / DeepSeek / Qwen，经 API 接 DeepSeek / Qwen 等 OpenAI-compatible 服务。
-4. 生成盘中摘要、盘后复盘、明日观察计划。
+- Published at: 2026-07-01T04:57:19.427Z
+- Source branch: codex/batch-01-bootstrap
+- Source commit: e69d371cb6310813be3a62025245fa5e248be3a4
+- Run dir: runs/run-2026-07-01T04-57-19-427Z
 
-## 技术栈
+## Files
 
-- pnpm workspace
-- apps/desktop: Angular 18 + Tauri
-- apps/agent: Node.js + TypeScript CLI
-- packages/db: better-sqlite3 + schema.sql
-- packages/core: 类型定义、规则模型、预警、报告导出
-- packages/llm: Mock / Ollama / DeepSeek / Qwen / OpenAI-compatible 适配器
-- packages/sources: Mock / JSON / CSV 数据源适配器
+- `latest/latest-local-test.log`
+- `latest/latest-local-summary.md`
+- `latest/latest-batch-test.md`
+- `latest/latest-batch-review.md`
+- `latest/manifest.json`
 
-## 快速开始
+## Summary snapshot
 
-```bash
-pnpm install
-pnpm db:init
-pnpm agent:mock 2026-06-28
-pnpm ai:review 2026-06-28
-pnpm alerts 2026-06-28
-pnpm report:md 2026-06-28
-pnpm desktop:dev
+```md
+# Chan Shuo Local Test Summary
+
+- Trade date: 2026-06-28
+- Started at: 2026-07-01T04:57:09.374Z
+- Finished at: 2026-07-01T04:57:18.912Z
+- Exit status: 1
+- Log: reports/local-test-2026-06-28-2026-07-01T04-57-09-374Z.log
+- Latest log: reports/latest-local-test.log
+- Batch test report: reports/batch-test-2026-06-28-2026-07-01T04-57-09-642Z.md
+- Batch review report: reports/batch-review-2026-06-28-2026-07-01T04-57-09-642Z.md
+- Latest batch test: reports/latest-batch-test.md
+- Latest batch review: reports/latest-batch-review.md
+
+## Next step
+
+本地 batch-test 未通过，请查看 `reports/latest-local-test.log` 和 `reports/latest-batch-test.md`。
 ```
-
-默认 AI 复盘使用 MockLLM。接本地 Ollama 多模型：
-
-```bash
-USE_OLLAMA=1 OLLAMA_MODEL=gemma3:4b pnpm ai:review 2026-06-28
-USE_OLLAMA=1 OLLAMA_MODEL=deepseek-r1:7b pnpm ai:review 2026-06-28
-USE_OLLAMA=1 OLLAMA_MODEL=qwen2.5:7b pnpm ai:review 2026-06-28
-```
-
-接 DeepSeek API：
-
-```bash
-USE_CLOUD_LLM=1 LLM_PROVIDER=deepseek LLM_API_KEY=你的本地密钥 pnpm ai:review 2026-06-28
-```
-
-## 数据导入
-
-JSON 导入：
-
-```bash
-pnpm agent:import:json data/sample-day.json
-```
-
-CSV 导入：
-
-```bash
-pnpm agent:import:csv data/sample-limit-up.csv 2026-06-28
-```
-
-## 验证
-
-```bash
-pnpm typecheck
-pnpm verify
-```
-
-## 操作手册
-
-完整操作说明见：
-
-```text
-docs/operation-manual.md
-```
-
-## Codex 开发入口
-
-优先阅读：
-
-```text
-docs/codex-master-prompt.md
-```
-
-后续阶段总结：
-
-```text
-docs/batch-05-summary.md
-docs/batch-06-summary.md
-docs/batch-07-summary.md
-docs/batch-08-summary.md
-docs/batch-09-summary.md
-docs/batch-10-summary.md
-```
-
-## 合规边界
-
-本项目只做个人研究、复盘、合法数据导入和 AI 辅助分析。不要实现破解接口、绕过登录、盗用 token、高频抓取、自动交易下单或商业化分发受限数据。

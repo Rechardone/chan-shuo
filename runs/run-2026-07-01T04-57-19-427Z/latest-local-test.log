@@ -1,0 +1,9 @@
+> chan-shuo@0.1.0 test:batches /Users/kandysmith/dev/chatgpt/chan-shuo
+> node scripts/batch-test.mjs "2026-06-28"
+
+batch test report: /Users/kandysmith/dev/chatgpt/chan-shuo/reports/batch-test-2026-06-28-2026-07-01T04-57-09-642Z.md
+review report: /Users/kandysmith/dev/chatgpt/chan-shuo/reports/batch-review-2026-06-28-2026-07-01T04-57-09-642Z.md
+latest batch test: /Users/kandysmith/dev/chatgpt/chan-shuo/reports/latest-batch-test.md
+latest batch review: /Users/kandysmith/dev/chatgpt/chan-shuo/reports/latest-batch-review.md
+passed=24 failed=4
+ ELIFECYCLE  Command failed with exit code 1.

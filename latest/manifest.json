@@ -1,0 +1,14 @@
+{
+  "publishedAt": "2026-07-01T04:57:19.427Z",
+  "sourceBranch": "codex/batch-01-bootstrap",
+  "sourceCommit": "e69d371cb6310813be3a62025245fa5e248be3a4",
+  "reportBranch": "test-reports",
+  "runDir": "runs/run-2026-07-01T04-57-19-427Z",
+  "latestDir": "latest",
+  "files": [
+    "latest-local-test.log",
+    "latest-local-summary.md",
+    "latest-batch-test.md",
+    "latest-batch-review.md"
+  ]
+}
