@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 
@@ -11,6 +11,8 @@ const reportPath = process.argv[3] ?? defaultReportPath;
 const reportAbsPath = resolve(workspaceRoot, reportPath);
 const reviewReportPath = `reports/batch-review-${tradeDate}-${runId}.md`;
 const reviewReportAbsPath = resolve(workspaceRoot, reviewReportPath);
+const latestBatchTestPath = resolve(workspaceRoot, 'reports/latest-batch-test.md');
+const latestBatchReviewPath = resolve(workspaceRoot, 'reports/latest-batch-review.md');
 const startedAt = new Date().toISOString();
 
 const cases = [
@@ -222,6 +224,8 @@ lines.push(`- Workspace root: ${workspaceRoot}`);
 lines.push(`- Batch report: ${reportPath}`);
 lines.push(`- Review report: ${reviewReportPath}`);
 lines.push(`- Review report absolute path: ${reviewReportAbsPath}`);
+lines.push(`- Latest batch test: reports/latest-batch-test.md`);
+lines.push(`- Latest batch review: reports/latest-batch-review.md`);
 lines.push(`- Started at: ${startedAt}`);
 lines.push(`- Finished at: ${new Date().toISOString()}`);
 lines.push(`- Passed: ${passed}`);
@@ -253,8 +257,12 @@ lines.push('> This report is generated locally and should not be committed when 
 
 mkdirSync(dirname(reportAbsPath), { recursive: true });
 writeFileSync(reportAbsPath, lines.join('\n'), 'utf8');
+if (existsSync(reportAbsPath)) copyFileSync(reportAbsPath, latestBatchTestPath);
+if (existsSync(reviewReportAbsPath)) copyFileSync(reviewReportAbsPath, latestBatchReviewPath);
 console.log(`batch test report: ${reportAbsPath}`);
 console.log(`review report: ${reviewReportAbsPath}`);
+console.log(`latest batch test: ${latestBatchTestPath}`);
+console.log(`latest batch review: ${latestBatchReviewPath}`);
 console.log(`passed=${passed} failed=${failed}`);
 process.exit(failed === 0 ? 0 : 1);
 
