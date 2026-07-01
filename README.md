@@ -4,10 +4,10 @@
 
 ## Latest
 
-- Published at: 2026-07-01T05:09:37.083Z
+- Published at: 2026-07-01T10:01:32.137Z
 - Source branch: codex/batch-01-bootstrap
-- Source commit: e69d371cb6310813be3a62025245fa5e248be3a4
-- Run dir: runs/run-2026-07-01T05-09-37-083Z
+- Source commit: 5eda98fab42e83edcf6522656b60c9334d4513b8
+- Run dir: runs/run-2026-07-01T10-01-32-137Z
 
 ## Files
 
@@ -23,13 +23,13 @@
 # Chan Shuo Local Test Summary
 
 - Trade date: 2026-06-28
-- Started at: 2026-07-01T05:09:27.863Z
-- Finished at: 2026-07-01T05:09:36.611Z
+- Started at: 2026-07-01T10:01:23.019Z
+- Finished at: 2026-07-01T10:01:31.659Z
 - Exit status: 1
-- Log: reports/local-test-2026-06-28-2026-07-01T05-09-27-862Z.log
+- Log: reports/local-test-2026-06-28-2026-07-01T10-01-23-018Z.log
 - Latest log: reports/latest-local-test.log
-- Batch test report: reports/batch-test-2026-06-28-2026-07-01T05-09-28-110Z.md
-- Batch review report: reports/batch-review-2026-06-28-2026-07-01T05-09-28-110Z.md
+- Batch test report: reports/batch-test-2026-06-28-2026-07-01T10-01-23-261Z.md
+- Batch review report: reports/batch-review-2026-06-28-2026-07-01T10-01-23-261Z.md
 - Latest batch test: reports/latest-batch-test.md
 - Latest batch review: reports/latest-batch-review.md
 
