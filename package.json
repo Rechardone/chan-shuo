@@ -29,6 +29,7 @@
     "verify": "pnpm db:init && pnpm agent:mock 2026-06-28 && pnpm quality 2026-06-28 && pnpm ai:review 2026-06-28 && pnpm alerts 2026-06-28 && pnpm report:md 2026-06-28 reports/verify.md",
     "test:batches": "node scripts/batch-test.mjs",
     "local:test-report": "node scripts/local-test-report.mjs",
+    "report:publish": "node scripts/publish-test-report.mjs",
     "typecheck": "pnpm -r typecheck"
   },
   "pnpm": {
